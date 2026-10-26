@@ -166,7 +166,7 @@ public abstract class TitleScreenMixin extends Screen {
             color
         );
 
-        // 2. Draw custom "LINKEN VISUALS" edition texture
+        // 2. Draw custom visuals modification edition texture
         int editionW = (int) (160 * scale);
         int editionH = (int) (16 * scale);
         int editionX = screenWidth / 2 - editionW / 2;

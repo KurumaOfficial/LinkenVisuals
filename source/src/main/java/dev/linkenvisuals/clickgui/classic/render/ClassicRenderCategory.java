@@ -28,7 +28,7 @@ public final class ClassicRenderCategory {
             ? ColorUtil.replAlpha(ColorUtil.getMainColor(1, 1), 160)
             : ColorUtil.getMainColor(1, 1);
 
-        RenderUtil.Round.draw(ctx, x + 7.0F, y + 30.0F, 195.0F, 12.0F, 4.0F, barBgColor);
+        RenderUtil.Round.draw(ctx, x + 7.0F, y + 30.0F, 211.0F, 12.0F, 4.0F, barBgColor);
 
         float xGo = 0.0F;
         for (ClassicCategory category : ClassicCategory.values()) {

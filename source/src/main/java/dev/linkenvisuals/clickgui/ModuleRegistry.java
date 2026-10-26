@@ -1,5 +1,6 @@
 package dev.linkenvisuals.clickgui;
 
+import dev.linkenvisuals.BuildFlavor;
 import dev.linkenvisuals.clickgui.setting.BooleanSetting;
 import dev.linkenvisuals.clickgui.setting.ColorSetting;
 import dev.linkenvisuals.clickgui.setting.KeybindSetting;
@@ -189,13 +190,7 @@ public final class ModuleRegistry {
             if (!onGui) {
                 return;
             }
-            if ("Classic".equalsIgnoreCase(style)) {
-                mc.setScreen(new dev.linkenvisuals.clickgui.classic.ClassicGuiScreen());
-            } else if ("Beta".equalsIgnoreCase(style)) {
-                mc.setScreen(new ClickGuiScreen());
-            } else if ("Linken".equalsIgnoreCase(style)) {
-                mc.setScreen(new dev.linkenvisuals.clickgui.link.LinkGuiScreen());
-            }
+            mc.setScreen(dev.linkenvisuals.ui.style.StyleRouting.resolveGuiScreen(style));
         });
         closeAnimation = new ModeSetting("Close Animation", List.of("Shatter", "Zoom Out"), 0);
         hudStyle = new ModeSetting("HUD Style", StyleFlavor.hudStyleOptions(), 0);
@@ -339,10 +334,15 @@ public final class ModuleRegistry {
         aspectRatio.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.WORLD);
         MODULES.add(aspectRatio);
 
-        cosmeticCrown = new ModeSetting("Crown", List.of("None", "Halo", "Orbit", "Spires", "ChinaHat", "Nimb"), 1);
-        cosmeticBack = new ModeSetting("Back", List.of("None", "Kagune", "Seraph", "Tendrils", "WaveCape"), 1);
-        cosmeticAura = new ModeSetting("Aura", List.of("None", "Shards", "Embers", "Runes", "Spheres"), 0);
-        cosmeticCharacter = new ModeSetting("Character", List.of("Default", "Rudy"), 0);
+        List<String> crownOpts = List.of("None", "Nimb");
+        List<String> backOpts = List.of("None", "WaveCape");
+        List<String> auraOpts = List.of("None", "Spheres");
+        List<String> charOpts = List.of("Default", "Rudy", "Astolfo");
+
+        cosmeticCrown = new ModeSetting("Crown", crownOpts, crownOpts.indexOf("Nimb") >= 0 ? crownOpts.indexOf("Nimb") : 0);
+        cosmeticBack = new ModeSetting("Back", backOpts, backOpts.indexOf("WaveCape") >= 0 ? backOpts.indexOf("WaveCape") : 0);
+        cosmeticAura = new ModeSetting("Aura", auraOpts, 0);
+        cosmeticCharacter = new ModeSetting("Character", charOpts, 0);
         cosmeticColor = new ColorSetting("Colour", Theme.DEFAULT_ACCENT);
 
         cosmeticSize = new SliderSetting("Size", 0.6f, 1.5f, 0.05f, 1.0f, "x");
@@ -1040,20 +1040,24 @@ public final class ModuleRegistry {
     }
 
     public static boolean isClassicGui() {
-        return guiStyle == null || "Classic".equalsIgnoreCase(guiStyle.value());
+        return guiStyle != null && "Classic".equalsIgnoreCase(guiStyle.value());
     }
 
     public static boolean isLinkenGui() {
         return guiStyle != null && "Linken".equalsIgnoreCase(guiStyle.value());
     }
 
-    /**
-     * While the Linken shell is active the style is locked: the user must not
-     * be able to fall back to Classic/Beta from the GUI or Ctrl+Left/Right.
-     * A single-style flavor (Linken-only or Strange-only) is locked too.
-     */
+    public static boolean isLinkenHud() {
+        return true;
+    }
+
+    public static boolean isLinkenMenu() {
+        return dev.linkenvisuals.ui.style.StyleManager.getStyle() == dev.linkenvisuals.ui.style.MenuStyle.LINKEN
+            || !BuildFlavor.STRANGE;
+    }
+
     public static boolean isGuiStyleLocked() {
-        return StyleFlavor.isGuiStyleLocked() || isLinkenGui();
+        return StyleFlavor.isGuiStyleLocked();
     }
 
     /** Pure rule used by tests and callers that already have the style name. */

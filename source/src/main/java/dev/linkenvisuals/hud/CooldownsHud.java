@@ -89,15 +89,23 @@ public final class CooldownsHud extends HudElement {
         if (iconFont == null) {
             iconFont = bold;
         }
-        String title = I18n.get("linkenvisuals.hud.cooldowns");
+        String title = I18n.get("elements.settings.elements.cooldownshud");
+        if (title.equals("elements.settings.elements.cooldownshud")) {
+            title = "Задержка";
+        }
         float centerY = y + HEADER_H * 0.5f;
-        float iconX = x + PADDING;
+        MsdfText.drawOn(context, bold, title, x + PADDING, centerY, TITLE_SIZE, textColor(globalAlpha));
+
         if (iconFont != null) {
+            float iconX = x + cachedWidth - PADDING - 10.0f;
             MsdfText.drawOn(context, iconFont, "Q", iconX, centerY, 8.0f, textColor(globalAlpha));
         }
-        float iconWidth = iconFont == null ? 0.0f : iconFont.width("Q", 8.0f);
-        MsdfText.drawOn(context, bold, title, iconX + iconWidth + 4.0f, centerY, TITLE_SIZE,
-            textColor(globalAlpha));
+
+        int accent = LinkGuiTheme.ACCENT;
+        float dividerY = y + HEADER_H - 1.0f;
+        context.fill(Math.round(x + PADDING), Math.round(dividerY),
+            Math.round(x + cachedWidth - PADDING), Math.round(dividerY + 1.0f),
+            ColorMath.withAlpha(accent, 90));
 
         float rowY = y + HEADER_H;
         Matrix3x2fStack matrices = context.getMatrices();

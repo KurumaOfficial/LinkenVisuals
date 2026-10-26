@@ -50,22 +50,24 @@ public final class WaypointsRenderer {
 
         Vec3d camPos = camera.getCameraPos();
         int totalVerts = waypoints.size() * 2; // vertical line per waypoint
-        ByteBuffer data = MemoryUtil.memAlloc(totalVerts * 28);
+        ByteBuffer data = MemoryUtil.memAlloc(totalVerts * 16);
         try {
+            int cyanArgb = 0xE600FFFF; // 0.9 alpha, cyan
             for (Waypoint w : waypoints) {
                 float x = (float) (w.x() - camPos.x);
                 float y0 = (float) (w.y() - camPos.y);
                 float y1 = y0 + 3.0f; // 3-block tall marker
                 float z = (float) (w.z() - camPos.z);
                 // Cyan marker.
-                putVertex(data, x, y0, z, 0.0f, 1.0f, 1.0f, 0.9f);
-                putVertex(data, x, y1, z, 0.0f, 1.0f, 1.0f, 0.9f);
+                putVertex(data, x, y0, z, cyanArgb);
+                putVertex(data, x, y1, z, cyanArgb);
             }
             data.flip();
             if (data.remaining() == 0) {
                 return;
             }
 
+            int vertices = data.remaining() / 16;
             CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
             GpuBuffer verts = RenderSystem.getDevice().createBuffer(
                 () -> "linkenvisuals:waypoints", GpuBuffer.USAGE_VERTEX, data);
@@ -76,7 +78,7 @@ public final class WaypointsRenderer {
                 pass.setPipeline(BlockOverlayPipelines.LINES);
                 Pipelines.bindWorldUniforms(pass, transforms);
                 pass.setVertexBuffer(0, verts);
-                pass.draw(0, data.remaining() / 28);
+                pass.draw(0, vertices);
             } finally {
                 verts.close();
             }
@@ -85,10 +87,12 @@ public final class WaypointsRenderer {
         }
     }
 
-    private static void putVertex(ByteBuffer data, float x, float y, float z,
-                                  float r, float g, float b, float a) {
+    private static void putVertex(ByteBuffer data, float x, float y, float z, int argb) {
         data.putFloat(x).putFloat(y).putFloat(z);
-        data.putFloat(r).putFloat(g).putFloat(b).putFloat(a);
+        data.put((byte) ((argb >> 16) & 0xFF));
+        data.put((byte) ((argb >> 8) & 0xFF));
+        data.put((byte) (argb & 0xFF));
+        data.put((byte) ((argb >>> 24) & 0xFF));
     }
 
     public static void init() {

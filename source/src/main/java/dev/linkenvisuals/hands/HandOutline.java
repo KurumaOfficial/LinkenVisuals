@@ -275,7 +275,7 @@ public final class HandOutline {
                 try {
                     fb.delete();
                 } catch (Throwable t) {
-                    dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Hand-outline release failed: {}", t.getMessage());
+                    dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Hand-outline release failed: {}", t.getMessage());
                 }
             }
         }

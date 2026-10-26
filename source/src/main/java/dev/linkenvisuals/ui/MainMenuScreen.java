@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 100% Custom Main Menu Screen for LinkenVisuals.
+ * 100% Custom Main Menu Screen for visuals modification.
  * Restores original AAA high-end typography, animations, watermark, and branding,
  * with 1:1 editor synchronicity and guaranteed responsive screen transitions.
  */
@@ -255,7 +255,7 @@ public final class MainMenuScreen extends Screen {
         context.getMatrices().translate(cx, cy);
         context.getMatrices().scale(size / 120.0f, size / 120.0f);
         context.drawTexture(RenderPipelines.GUI_TEXTURED, LOGO, -60, -60, 0.0f, 0.0f,
-            120, 120, 120, 120, ColorMath.withAlpha(0xFFFFFF, Math.round(16 * appear)));
+            120, 120, 128, 128, 128, 128, ColorMath.withAlpha(0xFFFFFF, Math.round(16 * appear)));
         context.getMatrices().popMatrix();
     }
 
@@ -293,7 +293,7 @@ public final class MainMenuScreen extends Screen {
             ? 0xFFFFAA00 : NeonEdge.cool();
 
         float textX = x + logoSize + 12.0f * scale;
-        reveal(context, "LINKEN", textX, top + 9.0f * scale, 11.0f * scale, 1.4f * scale, 0xFFFFFF, 250,
+        reveal(context, "STRANGE", textX, top + 9.0f * scale, 11.0f * scale, 1.4f * scale, 0xFFFFFF, 250,
             step(visible, 0.08f));
         reveal(context, "VISUALS", textX, top + 23.0f * scale, 11.0f * scale, 1.4f * scale, brandCol, 250,
             step(visible, 0.13f));
@@ -522,12 +522,12 @@ public final class MainMenuScreen extends Screen {
 
         if (distance(click.x(), click.y(), discordX, iconY) <= iconRadius) {
             playClick();
-            Util.getOperatingSystem().open("https://discord.gg/linkenvisuals");
+            Util.getOperatingSystem().open("https://discord.gg/strangevisuals");
             return true;
         }
         if (distance(click.x(), click.y(), telegramX, iconY) <= iconRadius) {
             playClick();
-            Util.getOperatingSystem().open("https://t.me/linkenvisuals");
+            Util.getOperatingSystem().open("https://t.me/strangevisuals");
             return true;
         }
 

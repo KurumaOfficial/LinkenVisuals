@@ -27,6 +27,7 @@ public final class TargetMarks {
     private static final Vector3f b = new Vector3f();
     private static final Vector3f c = new Vector3f();
     private static final Vector3f d = new Vector3f();
+    private static final CosmeticContext CONTEXT = new CosmeticContext();
 
     private static Entity held;
     private static Entity hitEntity;
@@ -103,10 +104,14 @@ public final class TargetMarks {
         for (int pass = 0; pass < 2; pass++) {
             boolean lit = pass == 1;
             VertexConsumer buffer = consumers.getBuffer(lit ? Material.LIGHT : Material.BODY);
-            CosmeticContext ctx = new CosmeticContext(buffer, lit ? CosmeticContext.LIGHT : CosmeticContext.SHEET,
+            CONTEXT.set(buffer, lit ? CosmeticContext.LIGHT : CosmeticContext.SHEET,
                 matrices.peek().getPositionMatrix(), client.player,
                 clock, 1.0f, colour, 0.0f, 0.0f, 1.0f);
-            draw(ctx, box, eye, presence, health(held));
+            draw(CONTEXT, box, eye, presence, health(held));
+        }
+        if (consumers instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
+            immediate.draw(Material.BODY);
+            immediate.draw(Material.LIGHT);
         }
     }
 

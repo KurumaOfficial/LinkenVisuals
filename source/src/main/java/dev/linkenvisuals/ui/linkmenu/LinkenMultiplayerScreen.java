@@ -277,7 +277,7 @@ public final class LinkenMultiplayerScreen extends Screen {
         float openEase = 1.0f - (1.0f - open) * (1.0f - open) * (1.0f - open);
         context.getMatrices().pushMatrix();
         context.getMatrices().translate(0.0f, (1.0f - openEase) * 18.0f);
-        drawWindow(context, vw, vh, mx, my, scale, seconds);
+        drawWindow(context, vw, vh, mx, my, scale, seconds, open);
         context.getMatrices().popMatrix();
         context.getMatrices().popMatrix();
 
@@ -353,7 +353,7 @@ public final class LinkenMultiplayerScreen extends Screen {
     }
 
     private void drawWindow(DrawContext context, float vw, float vh, float mx, float my,
-                            float scale, float seconds) {
+                            float scale, float seconds, float open) {
         float x = windowX(vw);
         float y = WIN_TOP;
         float w = WIN_W;
@@ -364,7 +364,7 @@ public final class LinkenMultiplayerScreen extends Screen {
         float listTop = y + TOPBAR_H;
         drawList(context, x, listTop, w, listHeight(), mx, my, scale, seconds);
         drawFooter(context, x, y + h - FOOTER_H, w, mx, my, scale, seconds);
-        corners(context, x, y, w, h, scale);
+        WindowMaterial.corners(context, x, y, w, h, scale, open);
     }
 
     private void windowMaterial(DrawContext context, float x, float y, float w, float h, float scale) {
@@ -422,22 +422,6 @@ public final class LinkenMultiplayerScreen extends Screen {
         }
     }
 
-    private void corners(DrawContext context, float x, float y, float w, float h, float scale) {
-        int color = LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, 237, 1.0f);
-        float size = 20.0f;
-        float thickness = 2.0f;
-        float offset = 14.0f;
-        RoundedRectPipeline.draw(context, x + offset, y + offset, size, thickness,
-            thickness * 0.5f * scale, color);
-        RoundedRectPipeline.draw(context, x + offset, y + offset, thickness, size,
-            thickness * 0.5f * scale, color);
-        float brx = x + w - offset + 2.0f;
-        float bry = y + h - offset + 2.0f;
-        RoundedRectPipeline.draw(context, brx - size, bry - thickness, size, thickness,
-            thickness * 0.5f * scale, color);
-        RoundedRectPipeline.draw(context, brx - thickness, bry - size, thickness, size,
-            thickness * 0.5f * scale, color);
-    }
 
     private void drawTopbar(DrawContext context, float x, float y, float w, float mx, float my,
                             float scale, float seconds) {
@@ -868,7 +852,7 @@ public final class LinkenMultiplayerScreen extends Screen {
         modalCancelRect = new LinkenMenuLayout.Rect(modalConfirmRect.x() - 9.0f - cancelWidth, by, cancelWidth, 44.0f);
         drawModalButton(context, modalCancelRect, cancel, false, mx, my, fade, metrics.scale());
         drawModalButton(context, modalConfirmRect, primary, true, mx, my, fade, metrics.scale());
-        corners(context, x, y, width, height, metrics.scale());
+        WindowMaterial.corners(context, x, y, width, height, metrics.scale(), fade);
     }
 
     private float modalHeight() {
@@ -1406,7 +1390,11 @@ public final class LinkenMultiplayerScreen extends Screen {
     public void close() {
         pinger.cancel();
         if (client != null) {
-            client.setScreen(parent);
+            Screen target = parent;
+            if (target == null || target == this) {
+                target = new LinkenMainMenuScreen();
+            }
+            client.setScreen(target);
         }
     }
 

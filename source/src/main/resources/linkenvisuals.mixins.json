@@ -58,6 +58,8 @@
     "PressableWidgetMixin",
     "SliderWidgetMixin",
     "GameOptionsScreenMixin",
+    "GameOptionsScreenAccessor",
+    "OptionsScreenAccessor",
     "EntryListWidgetMixin",
     "GameMenuScreenMixin",
     "KeyboardMixin",

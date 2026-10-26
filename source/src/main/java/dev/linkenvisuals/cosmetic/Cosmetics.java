@@ -63,6 +63,10 @@ public final class Cosmetics {
         float size = ModuleRegistry.cosmeticSize().value();
         int color = ModuleRegistry.cosmeticColor().rgb();
 
+        String back = ModuleRegistry.cosmeticSlot("back");
+        String aura = ModuleRegistry.cosmeticSlot("aura");
+        String crown = ModuleRegistry.cosmeticSlot("crown");
+
         matrices.push();
         matrices.translate(at.x - eye.x, at.y - eye.y, at.z - eye.z);
 
@@ -73,32 +77,21 @@ public final class Cosmetics {
             matrices.push();
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-bodyYaw));
             CosmeticContext worn = context(target, pass, matrices, player, size, color, speed, hurt);
-            switch (ModuleRegistry.cosmeticSlot("back")) {
-                case "Kagune" -> Kagune.render(worn);
-                case "Seraph" -> Seraph.render(worn);
-                case "Tendrils" -> Tendrils.render(worn);
+            switch (back) {
                 case "WaveCape" -> WaveCape.render(worn);
                 default -> { }
             }
-            switch (ModuleRegistry.cosmeticSlot("aura")) {
-                case "Shards" -> Shards.render(worn);
-                case "Embers" -> Embers.render(worn);
-                case "Runes" -> Runes.render(worn);
+            switch (aura) {
                 case "Spheres" -> Spheres.render(worn);
                 default -> { }
             }
             matrices.pop();
 
-            String crown = ModuleRegistry.cosmeticSlot("crown");
             if (!"None".equals(crown)) {
                 matrices.push();
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-crownYaw));
                 CosmeticContext head = context(target, pass, matrices, player, size, color, speed, hurt);
                 switch (crown) {
-                    case "Halo" -> Halo.render(head);
-                    case "Orbit" -> Orbit.render(head);
-                    case "Spires" -> Spires.render(head);
-                    case "ChinaHat" -> ChinaHat.render(head);
                     case "Nimb" -> Nimb.render(head);
                     default -> { }
                 }
@@ -107,6 +100,12 @@ public final class Cosmetics {
         }
 
         matrices.pop();
+
+        if (consumers instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
+            immediate.draw(Material.SOLID);
+            immediate.draw(Material.BODY);
+            immediate.draw(Material.LIGHT);
+        }
     }
 
     private static CosmeticContext context(VertexConsumer target, int pass, MatrixStack matrices,

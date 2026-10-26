@@ -135,7 +135,7 @@ public final class LinkenMenuMusic {
     }
 
     public static MediaWatcher.Track track() {
-        return new MediaWatcher.Track(TITLE, ARTIST, "LinkenVisuals",
+        return new MediaWatcher.Track(TITLE, ARTIST, "VisualsModification",
             isPlaying(), positionMs(), DURATION_MS);
     }
 }

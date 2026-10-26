@@ -60,8 +60,8 @@ public final class LinkenMenuChrome {
     public static final int MENU_ICON_CODE = 'H';
 
     private static final Identifier BACKGROUND = LinkenVisuals.id("textures/linkmenu/bg-tower.png");
-    private static final Identifier LV_LOGO = LinkenVisuals.id("textures/gui/lv_logo.png");
-    private static final Identifier LV_LOGO_SMALL = LinkenVisuals.id("textures/gui/logo.png");
+    private static final Identifier LV_LOGO = LinkenVisuals.id("textures/gui/linken_logo.png");
+    private static final Identifier LV_LOGO_SMALL = LinkenVisuals.id("textures/gui/lv_logo.png");
     private static final Identifier MUSIC_PLAY = LinkenVisuals.id("textures/linkmenu/music/play.png");
     private static final Identifier MUSIC_PAUSE = LinkenVisuals.id("textures/linkmenu/music/pause.png");
     private static final float BACKGROUND_WIDTH = 1270.0f;
@@ -151,21 +151,17 @@ public final class LinkenMenuChrome {
         drawText(context, font, ".", x + wordWidth, y, size, rgba(ACCENT, fade));
     }
 
-    /** Linken monogram used by the menu, HUD and GUI. */
+    /** Linken logo used by the menu, HUD and GUI. */
     public static void drawLogo(DrawContext context, float x, float y, float size, float fade) {
-        // The 512 px master is meant for large draws. At 16-24 px (LinkGUI
-        // header/footer) it is minified ~21x without mipmaps and starts to
-        // shimmer, so small draws use the dedicated 120 px texture instead.
-        boolean small = size <= 128.0f;
-        Identifier texture = small ? LV_LOGO_SMALL : LV_LOGO;
-        int texSize = small ? 120 : 512;
+        Identifier texture = LV_LOGO;
+        int texSize = 128;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, texture,
             Math.round(x), Math.round(y), 0.0f, 0.0f,
             Math.round(size), Math.round(size), texSize, texSize, texSize, texSize,
             rgba(0xFFFFFF, fade));
     }
 
-    /** Legacy corner wordmark used by the LINKEN sub-screens. */
+    /** Legacy corner wordmark used by the sub-screens. */
     public static void drawWordmark(DrawContext context, float fade) {
         GlyphAtlas font = LinkenFonts.bodyMedium();
         float size = 27.0f;
@@ -330,6 +326,11 @@ public final class LinkenMenuChrome {
 
     public static void drawMusic(DrawContext context, LinkenMenuLayout.Rect card, MediaWatcher.Track track,
                                  float fade, float uiScale) {
+        drawMusic(context, card, track, fade, uiScale, 0.0f);
+    }
+
+    public static void drawMusic(DrawContext context, LinkenMenuLayout.Rect card, MediaWatcher.Track track,
+                                 float fade, float uiScale, float coverHover) {
         boolean present = track != null && track.present();
         float bottom = card.bottom();
         float coverSize = 34.0f;
@@ -348,9 +349,10 @@ public final class LinkenMenuChrome {
             coverSize * 0.5f * uiScale, rgba(0x37302A, 255, fade), rgba(0x12100E, 255, fade));
         boolean playing = present && track.playing();
         Identifier icon = playing ? MUSIC_PAUSE : MUSIC_PLAY;
+        int iconColor = mix(MUTED, TEXT, playing ? 1.0f : coverHover);
         context.drawTexture(RenderPipelines.GUI_TEXTURED, icon,
             Math.round(card.x() + (coverSize - 9.0f) * 0.5f), Math.round(rowY + (coverSize - 9.0f) * 0.5f),
-            0.0f, 0.0f, 9, 9, 9, 9, rgba(playing ? TEXT : MUTED, fade));
+            0.0f, 0.0f, 9, 9, 9, 9, rgba(iconColor, fade));
 
         float textX = card.x() + coverSize + 12.0f;
         float availableWidth = card.width() - (textX - card.x());
@@ -643,7 +645,7 @@ public final class LinkenMenuChrome {
         try {
             Util.getOperatingSystem().open(url);
         } catch (RuntimeException failure) {
-            LinkenVisuals.LOGGER.warn("Failed to open LINKEN menu URL '{}': {}", url, failure.getMessage());
+            LinkenVisuals.LOGGER.warn("[Visuals Modification] Failed to open menu URL '{}': {}", url, failure.getMessage());
         }
     }
 }

@@ -192,6 +192,7 @@ public final class LinkenAltManagerScreen extends Screen {
             }
             StoredAccount added = new StoredAccount(name);
             selected = added;
+            apply(added);
             closeModal();
             refresh();
             playClick();
@@ -318,6 +319,8 @@ public final class LinkenAltManagerScreen extends Screen {
         LinkenMenuChrome.drawRightText(context, LinkenFonts.body(), "ESC  /  BACK",
             WINDOW_X + WINDOW_W - 20.0f, WINDOW_Y + WINDOW_H - 42.0f, 9.0f,
             LinkenMenuChrome.rgba(LinkenMenuChrome.MUTED3, fade));
+
+        WindowMaterial.corners(context, WINDOW_X, WINDOW_Y, WINDOW_W, WINDOW_H, metrics.scale(), fade);
     }
 
     private void drawSearch(DrawContext context, LinkenMenuLayout.Metrics metrics, float mx, float my, float fade) {
@@ -467,6 +470,8 @@ public final class LinkenAltManagerScreen extends Screen {
         drawModalButton(context, metrics, modalCancelRect, "CANCEL", false, mx, my, fade, seconds, modalCancelSpring);
         drawModalButton(context, metrics, modalConfirmRect, delete ? "DELETE" : "ADD",
             true, mx, my, fade, seconds, modalConfirmSpring);
+
+        WindowMaterial.corners(context, x, y, width, height, metrics.scale(), fade);
     }
 
     private void drawChip(DrawContext context, LinkenMenuLayout.Metrics metrics, LinkenMenuLayout.Rect rect,
@@ -571,11 +576,8 @@ public final class LinkenAltManagerScreen extends Screen {
         for (int i = 0; i < rowRects.size(); i++) {
             if (rowRects.get(i).contains(mx, my)) {
                 StoredAccount account = rowAccounts.get(i);
-                if (doubleClick) {
-                    apply(account);
-                } else {
-                    selected = account;
-                }
+                selected = account;
+                apply(account);
                 return true;
             }
         }
@@ -722,7 +724,11 @@ public final class LinkenAltManagerScreen extends Screen {
     @Override
     public void close() {
         if (client != null) {
-            client.setScreen(parent);
+            Screen target = parent;
+            if (target == null || target == this) {
+                target = client.world != null ? new LinkenPauseScreen() : new LinkenMainMenuScreen();
+            }
+            client.setScreen(target);
         }
     }
 }

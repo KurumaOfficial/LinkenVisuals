@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * One-shot migration of player data written by the pre-rename mod id
+ * One-shot migration of player data written by the legacy visuals modification id
  * ({@code strangevisuals}) to the current {@code linkenvisuals} locations.
  * <p>
  * Copies legacy files and directories only when the new target does not exist yet,

@@ -112,6 +112,7 @@ public final class LinkGuiScreen extends Screen {
     private final Map<String, ExitCard> gridExit = new HashMap<>();
     private final Map<String, Float> gridAlpha = new HashMap<>();
     private final LinkGuiCursorTrail cursorTrail = new LinkGuiCursorTrail();
+    private final MusicPlayerStrip music = new MusicPlayerStrip();
 
     private long lastFrame = System.nanoTime();
     private boolean closing;
@@ -168,9 +169,6 @@ public final class LinkGuiScreen extends Screen {
     private float settingsDragY;
     private Rect settingsCloseHit;
     private Rect settingsHeaderHit;
-    private Rect mediaPrevHit;
-    private Rect mediaPlayHit;
-    private Rect mediaNextHit;
     private Rect configInputHit;
     private Rect configCreateHit;
     private Rect configFolderHit;
@@ -227,6 +225,8 @@ public final class LinkGuiScreen extends Screen {
         profileOpen = true;
         themeOpen = true;
         closing = false;
+        MediaWatcher.ensureRunning();
+        music.init();
         lastFrame = System.nanoTime();
         if (client != null) {
             client.getSoundManager().play(PositionedSoundInstance.ui(LinkenVisuals.OPEN_SOUND, 1.0f, 0.86f));
@@ -245,12 +245,12 @@ public final class LinkGuiScreen extends Screen {
                 return textures;
             }
         } catch (RuntimeException unavailable) {
-            LinkenVisuals.LOGGER.debug("LINKEN ClickGUI skin lookup failed: {}", unavailable.getMessage());
+            LinkenVisuals.LOGGER.debug("[Visuals Modification] ClickGUI skin lookup failed: {}", unavailable.getMessage());
         }
         try {
             return DefaultSkinHelper.getSkinTextures(client.getGameProfile());
         } catch (RuntimeException unavailable) {
-            LinkenVisuals.LOGGER.debug("LINKEN ClickGUI default skin failed: {}", unavailable.getMessage());
+            LinkenVisuals.LOGGER.debug("[Visuals Modification] ClickGUI default skin failed: {}", unavailable.getMessage());
             return null;
         }
     }
@@ -271,6 +271,7 @@ public final class LinkGuiScreen extends Screen {
         if (client != null) {
             client.getSoundManager().play(PositionedSoundInstance.ui(LinkenVisuals.BACK_SOUND, 1.0f, 0.9f));
         }
+        music.shutdown();
         closing = true;
     }
 
@@ -374,7 +375,7 @@ public final class LinkGuiScreen extends Screen {
                 try {
                     context.applyBlur();
                 } catch (RuntimeException unavailable) {
-                    LinkenVisuals.LOGGER.debug("LINKEN ClickGUI blur unavailable: {}", unavailable.getMessage());
+                    LinkenVisuals.LOGGER.debug("[Visuals Modification] ClickGUI blur unavailable: {}", unavailable.getMessage());
                 }
             }
             context.fill(0, 0, width, height,
@@ -736,7 +737,8 @@ public final class LinkGuiScreen extends Screen {
         }
         context.disableScissor();
         scrollbar(context, metrics, area.right() - 0.0f, area.y(), area.height(), contentHeight, scroll, openT);
-        drawMediaStrip(context, metrics, panel, mx, my, openT);
+        drawMediaStrip(context, metrics, panel, mx, my, openT, deltaSeconds);
+        dev.linkenvisuals.ui.linkmenu.WindowMaterial.corners(context, panel.x(), panel.y(), panel.width(), panel.height(), metrics.scale(), openT);
     }
 
     private float cardWidth(Metrics metrics) {
@@ -806,99 +808,9 @@ public final class LinkGuiScreen extends Screen {
     }
 
     private void drawMediaStrip(DrawContext context, Metrics metrics, Rect panel, float mx, float my,
-                                float openT) {
-        MediaWatcher.Track track = MediaWatcher.current();
-        boolean present = track != null && track.present();
-        float stripTop = panel.bottom() - 92.0f;
-        context.fill(Math.round(panel.x() + 20.0f), Math.round(stripTop),
-            Math.round(panel.right() - 20.0f), Math.round(stripTop + 1.0f),
-            LinkenMenuChrome.rgba(0xFFFFFF, 42, openT));
-        Rect strip = new Rect(panel.x() + 20.0f, stripTop + 16.0f,
-            panel.width() - 40.0f, 76.0f);
-
-        float art = 40.0f;
-        float artY = strip.y() + (strip.height() - 24.0f - art) * 0.5f + 2.0f;
-        float artX = strip.x() + 14.0f;
-        LinkenMenuChrome.roundedFill(context, artX, artY, art, art, 7.0f,
-            LinkenMenuChrome.rgba(0x201A17, 235, openT), metrics.scale());
-        long now = System.currentTimeMillis();
-        for (int i = 0; i < 3; i++) {
-            float pulse = present && track.playing()
-                ? 0.5f + 0.5f * (float) Math.sin(now / 180.0 + i * 1.7)
-                : 0.22f;
-            float barH = 8.0f + pulse * 16.0f;
-            LinkenMenuChrome.roundedFill(context, artX + 14.0f + i * 6.0f,
-                artY + art * 0.5f - barH * 0.5f, 3.0f, barH, 1.5f,
-                LinkenMenuChrome.rgba(LinkenMenuChrome.mix(LinkGuiTheme.MUTED,
-                    LinkGuiTheme.ACCENT, pulse), openT), metrics.scale());
-        }
-
-        float textX = artX + art + 10.0f;
-        float textW = strip.width() * 0.30f;
-        float centerY = artY + art * 0.5f;
-        if (present) {
-            LinkenMenuChrome.drawOn(context, LinkenFonts.heading(),
-                LinkenMenuChrome.ellipsize(LinkenFonts.heading(), track.title(), textW, 10.2f),
-                textX, centerY - 5.0f, 10.2f, LinkenMenuChrome.rgba(LinkGuiTheme.TEXT, openT));
-            String artist = track.artist().isBlank() ? track.app() : track.artist();
-            LinkenMenuChrome.drawOn(context, LinkenFonts.body(),
-                LinkenMenuChrome.ellipsize(LinkenFonts.body(), artist, textW, 8.4f),
-                textX, centerY + 7.0f, 8.4f, LinkenMenuChrome.rgba(LinkGuiTheme.MUTED2, openT));
-        } else {
-            LinkenMenuChrome.drawOn(context, LinkenFonts.body(), "No media playing",
-                textX, centerY, 9.2f, LinkenMenuChrome.rgba(LinkGuiTheme.MUTED2, openT));
-        }
-
-        float centerX = strip.x() + strip.width() * 0.5f;
-        float controlButton = 26.4f;
-        float controlY = centerY;
-        mediaPrevHit = new Rect(centerX - 29.0f - controlButton * 0.5f,
-            controlY - controlButton * 0.5f, controlButton, controlButton);
-        mediaPlayHit = new Rect(centerX - controlButton * 0.5f,
-            controlY - controlButton * 0.5f, controlButton, controlButton);
-        mediaNextHit = new Rect(centerX + 29.0f - controlButton * 0.5f,
-            controlY - controlButton * 0.5f, controlButton, controlButton);
-        drawMediaButton(context, metrics, mediaPrevHit, "<<", mx, my, openT);
-        drawMediaButton(context, metrics, mediaPlayHit, present && track.playing() ? "||" : ">", mx, my, openT);
-        drawMediaButton(context, metrics, mediaNextHit, ">>", mx, my, openT);
-
-        float progressY = strip.bottom() - 10.0f;
-        float progressX = strip.x() + 14.0f;
-        float progressW = strip.width() - 28.0f;
-        long duration = present ? Math.max(1L, track.length()) : 1L;
-        long position = present ? Math.max(0L, Math.min((long) track.position(), duration)) : 0L;
-        String left = present ? LinkenMenuChrome.fmtTime(position) : "0:00";
-        String right = present ? LinkenMenuChrome.fmtTime(duration) : "0:00";
-        float leftW = LinkenMenuChrome.textWidth(LinkenFonts.mono(), left, 9.0f);
-        float rightW = LinkenMenuChrome.textWidth(LinkenFonts.mono(), right, 9.0f);
-        LinkenMenuChrome.drawText(context, LinkenFonts.mono(), left, progressX, progressY, 9.0f,
-            LinkenMenuChrome.rgba(LinkGuiTheme.MUTED, openT));
-        LinkenMenuChrome.drawRightText(context, LinkenFonts.mono(), right,
-            progressX + progressW, progressY, 9.0f, LinkenMenuChrome.rgba(LinkGuiTheme.MUTED, openT));
-        float barX = progressX + leftW + 10.0f;
-        float barW = progressW - leftW - rightW - 20.0f;
-        if (barW > 4.0f) {
-            LinkenMenuChrome.roundedFill(context, barX, progressY + 4.0f, barW, 2.0f, 1.0f,
-                LinkenMenuChrome.rgba(0xFFFFFF, 34, openT), metrics.scale());
-            if (present && position > 0L) {
-                float progress = position / (float) duration;
-                LinkenMenuChrome.roundedFill(context, barX, progressY + 4.0f, barW * progress, 2.0f, 1.0f,
-                    LinkenMenuChrome.rgba(LinkGuiTheme.ACCENT, openT), metrics.scale());
-            }
-        }
-    }
-
-    private void drawMediaButton(DrawContext context, Metrics metrics, Rect rect, String label,
-                                 float mx, float my, float openT) {
-        boolean hovered = rect.contains(mx, my);
-        LinkenMenuChrome.roundedFill(context, rect.x(), rect.y(), rect.width(), rect.height(), 7.0f,
-            LinkenMenuChrome.rgba(hovered ? LinkGuiTheme.HOVER : LinkGuiTheme.ROW, 226, openT), metrics.scale());
-        LinkenMenuChrome.roundedOutline(context, rect.x(), rect.y(), rect.width(), rect.height(), 7.0f, 1.0f,
-            LinkenMenuChrome.rgba(hovered ? LinkGuiTheme.ACCENT : 0xFFFFFF, hovered ? 92 : 18, openT),
-            metrics.scale());
-        LinkenMenuChrome.drawCentered(context, LinkenFonts.mono(), label,
-            rect.x() + rect.width() * 0.5f, rect.y() + 8.0f, 9.0f,
-            LinkenMenuChrome.rgba(hovered ? LinkGuiTheme.ACCENT : LinkGuiTheme.ON_DARK, openT));
+                                float openT, float deltaSeconds) {
+        music.setBounds(panel.x() + 20.0f, panel.bottom() - 92.0f, panel.width() - 40.0f, 84.0f);
+        music.render(context, mx, my, openT, deltaSeconds, metrics.scale());
     }
 
     private static int categoryGlyph(Category category) {
@@ -2415,18 +2327,7 @@ public final class LinkGuiScreen extends Screen {
             }
         }
 
-        if (mediaPrevHit != null && mediaPrevHit.contains(mx, my)) {
-            LinkGuiMediaKeys.previous();
-            playClick();
-            return true;
-        }
-        if (mediaPlayHit != null && mediaPlayHit.contains(mx, my)) {
-            LinkGuiMediaKeys.playPause();
-            playClick();
-            return true;
-        }
-        if (mediaNextHit != null && mediaNextHit.contains(mx, my)) {
-            LinkGuiMediaKeys.next();
+        if (music.mouseClicked(mx, my, click.button())) {
             playClick();
             return true;
         }
@@ -2615,6 +2516,7 @@ public final class LinkGuiScreen extends Screen {
         Metrics metrics = LinkGuiLayout.compute(width, height);
         float mx = (float) (click.x() - metrics.offsetX()) / metrics.scale();
         float my = (float) (click.y() - metrics.offsetY()) / metrics.scale();
+        music.mouseDragged(mx, my);
         if (settingsDragging) {
             settingsX = mx - settingsDragX;
             settingsY = my - settingsDragY;
@@ -2644,6 +2546,10 @@ public final class LinkGuiScreen extends Screen {
             draggingSlider = null;
             return true;
         }
+        Metrics metrics = LinkGuiLayout.compute(width, height);
+        float mx = (float) (click.x() - metrics.offsetX()) / metrics.scale();
+        float my = (float) (click.y() - metrics.offsetY()) / metrics.scale();
+        music.mouseReleased(mx, my, click.button());
         return super.mouseReleased(click);
     }
 

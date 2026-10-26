@@ -18,17 +18,16 @@ if (project.hasProperty('bumpVersion')) {
             propsFile.setText(updatedText, 'UTF-8')
             project.extensions.extraProperties.set('mod_version', newVersion)
             println "=========================================================="
-            println " [LinkenVisuals] Bumped patch version to: ${newVersion}"
+            println " [Visuals Modification] Bumped patch version to: ${newVersion}"
             println "=========================================================="
         }
     }
 }
 
-// -Pstrange builds the StrangeVisuals-family jar (Classic/Beta GUI, Vanilla/Beta
-// menu, legacy HUD). Without the flag the jar is Linken-only. The two style
-// families are mutually exclusive at runtime; see StyleFlavor.
+// Linken is the primary default family for the visuals modification mod.
+// Passing -Pstrange=true produces the alternative Strange family jar.
 def strangeFlavor = project.hasProperty('strange')
-    && !project.property('strange').toString().equalsIgnoreCase('false')
+    && project.property('strange').toString().equalsIgnoreCase('true')
 def flavorName = strangeFlavor ? 'strange' : 'linken'
 
 // Optimization jars dropped here are embedded as Fabric Jar-in-Jar entries.
@@ -41,8 +40,8 @@ group = project.maven_group
 
 base {
     archivesName = strangeFlavor
-        ? "${project.archives_base_name}-strange"
-        : project.archives_base_name
+        ? 'strangevisuals'
+        : 'linkenvisuals'
 }
 
 // Generate the compile-time flavor constant; never edit build/ by hand.
@@ -71,7 +70,7 @@ tasks.named('compileJava') {
     dependsOn generateBuildFlavor
 }
 println "=========================================================="
-println " [LinkenVisuals] Build flavor: ${flavorName} (jar: ${base.archivesName.get()}-${project.version}.jar)"
+println " [Visuals Modification] Build flavor: ${flavorName} (jar: ${base.archivesName.get()}-${project.version}.jar)"
 println "=========================================================="
 
 repositories {
@@ -83,6 +82,8 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    implementation(files("libs/MediaPlayerInfo-0.1.0.jar"))
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -123,7 +124,16 @@ processResources {
         if (!jars.isEmpty()) {
             text = text.replace('"jars": []', "\"jars\": [\n${jars}\n  ]")
         }
+        if (strangeFlavor) {
+            text = text.replace('"name": "LinkenVisuals"', '"name": "StrangeVisuals"')
+            text = text.replace('"icon": "assets/linkenvisuals/logo.png"', '"icon": "assets/linkenvisuals/textures/gui/strange_logo.png"')
+        }
         manifest.setText(text, 'UTF-8')
+        def targetLogo = layout.buildDirectory.file('resources/main/assets/linkenvisuals/textures/gui/logo.png').get().asFile
+        def srcLogo = file("src/main/resources/assets/linkenvisuals/textures/gui/${strangeFlavor ? 'strange_logo.png' : 'linken_logo.png'}")
+        if (targetLogo.exists() && srcLogo.exists()) {
+            targetLogo.bytes = srcLogo.bytes
+        }
     }
 }
 
@@ -163,11 +173,11 @@ def verifyEmbeddedOptimizationJars = tasks.register('verifyEmbeddedOptimizationJ
                     if (!ids.add(id)) {
                         throw new GradleException("duplicate embedded mod id '${id}' (${jar.name})")
                     }
-                    println " [LinkenVisuals] embedded ${id} ${data.version ?: '?'} (${jar.name})"
+                    println " [Visuals Modification] embedded ${id} ${data.version ?: '?'} (${jar.name})"
                 }
             }
         }
-        println " [LinkenVisuals] verified ${expected.size()} embedded optimization jar(s)"
+        println " [Visuals Modification] verified ${expected.size()} embedded optimization jar(s)"
     }
 }
 check.dependsOn verifyEmbeddedOptimizationJars
@@ -223,6 +233,12 @@ loom {
     }
 }
 
+jar {
+    from(zipTree(file('libs/MediaPlayerInfo-0.1.0.jar'))) {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+}
+
 // Optional local deploy: copies the remapped jar into a Minecraft mods folder
 // when -PmultiMcModsDir=<path> is passed (set it in ~/.gradle/gradle.properties,
 // never hardcode machine-specific paths in the repository).
@@ -233,7 +249,7 @@ remapJar.doLast {
     def modsDir = file(project.property('multiMcModsDir'))
     if (!modsDir.exists()) {
         println "=========================================================="
-        println " [LinkenVisuals] multiMcModsDir does not exist: ${modsDir.absolutePath} — skipping deploy"
+        println " [Visuals Modification] multiMcModsDir does not exist: ${modsDir.absolutePath} — skipping deploy"
         println "=========================================================="
         return
     }
@@ -249,6 +265,6 @@ remapJar.doLast {
         into modsDir
     }
     println "=========================================================="
-    println " [LinkenVisuals] Copied ${remapJar.archiveFile.get().asFile.name} to ${modsDir.absolutePath}!"
+    println " [Visuals Modification] Copied ${remapJar.archiveFile.get().asFile.name} to ${modsDir.absolutePath}!"
     println "=========================================================="
 }

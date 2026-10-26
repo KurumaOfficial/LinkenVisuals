@@ -66,7 +66,7 @@ public final class Lyrics {
     }
 
     private static final java.util.concurrent.ExecutorService EXECUTOR = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r, "linkenvisuals-lyrics");
+        Thread thread = new Thread(r, "visuals-modification-lyrics");
         thread.setDaemon(true);
         return thread;
     });
@@ -118,7 +118,7 @@ public final class Lyrics {
     private static List<Line> fetch(String artist, String title, long duration) throws Exception {
         String url = "https://lrclib.net/api/get?artist_name=" + encode(artist) + "&track_name=" + encode(title);
         HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-            .header("User-Agent", "LinkenVisuals (Minecraft mod)")
+            .header("User-Agent", "VisualsModification (Minecraft mod)")
             .timeout(Duration.ofSeconds(8))
             .GET()
             .build();

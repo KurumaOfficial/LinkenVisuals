@@ -33,7 +33,10 @@ public abstract class PressableWidgetMixin extends ClickableWidget {
         Screen screen = client.currentScreen;
         if (screen instanceof dev.linkenvisuals.ui.editor.MainMenuEditorScreen
                 || screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen
-                || screen instanceof net.minecraft.client.gui.screen.ChatScreen) {
+                || screen instanceof net.minecraft.client.gui.screen.ChatScreen
+                || screen instanceof SelectWorldScreen
+                || screen instanceof net.minecraft.client.gui.screen.world.CreateWorldScreen
+                || screen instanceof net.minecraft.client.gui.screen.world.EditWorldScreen) {
             return;
         }
 

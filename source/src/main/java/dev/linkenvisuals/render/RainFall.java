@@ -28,6 +28,7 @@ public final class RainFall {
     private static final Vector3f c = new Vector3f();
     private static final Vector3f d = new Vector3f();
     private static final BlockPos.Mutable probe = new BlockPos.Mutable();
+    private static final dev.linkenvisuals.cosmetic.CosmeticContext CONTEXT = new dev.linkenvisuals.cosmetic.CosmeticContext();
     private static float clock;
     private static long lastFrame = System.nanoTime();
 
@@ -66,12 +67,16 @@ public final class RainFall {
         for (int pass = 0; pass < 2; pass++) {
             boolean lit = pass == 1;
             VertexConsumer target = consumers.getBuffer(lit ? Material.LIGHT : Material.BODY);
-            CosmeticContext ctx = new CosmeticContext(target, lit ? CosmeticContext.LIGHT : CosmeticContext.SHEET,
+            CONTEXT.set(target, lit ? dev.linkenvisuals.cosmetic.CosmeticContext.LIGHT : dev.linkenvisuals.cosmetic.CosmeticContext.SHEET,
                 matrices.peek().getPositionMatrix(), client.player,
                 clock, 1.0f, tint, 0.0f, 0.0f, 1.0f);
             for (int i = 0; i < count; i++) {
-                drop(ctx, client, eye, i, fall * strength);
+                drop(CONTEXT, client, eye, i, fall * strength);
             }
+        }
+        if (consumers instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
+            immediate.draw(Material.BODY);
+            immediate.draw(Material.LIGHT);
         }
     }
 

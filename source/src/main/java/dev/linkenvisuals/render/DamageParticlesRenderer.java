@@ -157,20 +157,22 @@ public final class DamageParticlesRenderer {
         double deltaSeconds = Math.min(0.2, Math.max(0.0, (nowNs - lastUpdateNanos) / 1.0E9));
         lastUpdateNanos = nowNs;
         Vec3d cam = camera.getCameraPos();
-        Vector3fc right = camera.getHorizontalPlane();
-        Vector3fc up = camera.getVerticalPlane();
+        Vector3fc right = new Vector3f(1.0f, 0.0f, 0.0f).rotate(camera.getRotation());
+        Vector3fc up = new Vector3f(0.0f, 1.0f, 0.0f).rotate(camera.getRotation());
+        Frustum frustum = client.worldRenderer.getCapturedFrustum();
 
         if (!LEGACY.isEmpty()) {
-            renderLegacy(client, main, module, cam, right, up, nowMs);
+            renderLegacy(client, main, module, cam, right, up, nowMs, frustum);
         }
         if (!ATTACK.isEmpty() || !THROW.isEmpty()) {
-            renderDecorative(client, main, module, cam, right, up, nowMs, deltaSeconds);
+            renderDecorative(client, main, module, cam, right, up, nowMs, deltaSeconds, frustum);
         }
     }
 
     private static void renderLegacy(MinecraftClient client, Framebuffer main,
                                      DamageParticlesModule module, Vec3d cam,
-                                     Vector3fc right, Vector3fc up, long nowMs) {
+                                     Vector3fc right, Vector3fc up, long nowMs,
+                                     Frustum frustum) {
         List<Billboard> glow = new ArrayList<>();
         List<Billboard> coreStar = new ArrayList<>();
         List<Billboard> coreFirefly = new ArrayList<>();
@@ -187,7 +189,7 @@ public final class DamageParticlesRenderer {
                 continue;
             }
             particle.update(nowMs, client);
-            if (!isInView(client, particle.pos)) {
+            if (!isInView(frustum, particle.pos)) {
                 continue;
             }
             if (nowMs - particle.losCheckedMs >= 100L) {
@@ -226,15 +228,16 @@ public final class DamageParticlesRenderer {
     private static void renderDecorative(MinecraftClient client, Framebuffer main,
                                          DamageParticlesModule module, Vec3d cam,
                                          Vector3fc right, Vector3fc up,
-                                         long nowMs, double deltaSeconds) {
+                                         long nowMs, double deltaSeconds,
+                                         Frustum frustum) {
         String mode = module.mode.current();
         boolean cube = "Cube".equals(mode);
         List<Billboard> billboards = new ArrayList<>();
         List<CubeDraw> cubes = new ArrayList<>();
         renderDecorativeList(client, ATTACK, module, cam, nowMs, deltaSeconds,
-            cube, billboards, cubes);
+            cube, billboards, cubes, frustum);
         renderDecorativeList(client, THROW, module, cam, nowMs, deltaSeconds,
-            cube, billboards, cubes);
+            cube, billboards, cubes, frustum);
         if (!billboards.isEmpty()) {
             drawBillboards(client, main, texture(mode), billboards, cam, right, up);
         }
@@ -246,11 +249,15 @@ public final class DamageParticlesRenderer {
     private static void renderDecorativeList(MinecraftClient client, List<DecorativeParticle> particles,
                                              DamageParticlesModule module, Vec3d cam, long nowMs,
                                              double deltaSeconds, boolean cube,
-                                             List<Billboard> billboards, List<CubeDraw> cubes) {
+                                             List<Billboard> billboards, List<CubeDraw> cubes,
+                                             Frustum frustum) {
         for (DecorativeParticle particle : particles) {
             particle.update(deltaSeconds);
             long age = nowMs - particle.spawnMs;
             if (age > DamageParticlesRules.DECORATIVE_LIFETIME_MS) {
+                continue;
+            }
+            if (!isInView(frustum, particle.position)) {
                 continue;
             }
             boolean attack = particles == ATTACK;
@@ -469,8 +476,7 @@ public final class DamageParticlesRenderer {
         return entity instanceof EnderPearlEntity || entity instanceof ArrowEntity;
     }
 
-    private static boolean isInView(MinecraftClient client, Vec3d pos) {
-        Frustum frustum = client.worldRenderer.getCapturedFrustum();
+    private static boolean isInView(Frustum frustum, Vec3d pos) {
         return frustum == null || frustum.isVisible(new Box(pos.x - 0.5, pos.y - 0.5, pos.z - 0.5,
             pos.x + 0.5, pos.y + 0.5, pos.z + 0.5));
     }

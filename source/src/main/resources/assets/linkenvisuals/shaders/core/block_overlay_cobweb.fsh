@@ -4,12 +4,16 @@ in vec2 texCoord;
 out vec4 fragColor;
 
 layout(std140) uniform BlockOverlay {
-    float time;
-    vec2 screenSize;
-    vec4 baseColor;
-    float alpha;
-    float zoomFactor;
+    vec4 uParams;
+    vec4 uScreen;
+    vec4 uColor;
 };
+
+#define time (uParams.x)
+#define alpha (uParams.y)
+#define zoomFactor (max(0.001, uParams.z))
+#define screenSize (uScreen.xy)
+#define baseColor (uColor)
 
 const vec3 eps = vec3(0.001, 0., 0.);
 const int iter = 64;

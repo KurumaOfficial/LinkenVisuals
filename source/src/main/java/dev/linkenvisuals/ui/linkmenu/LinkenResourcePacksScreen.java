@@ -245,6 +245,8 @@ public final class LinkenResourcePacksScreen extends Screen {
             openFolderRect.right() + 16.0f, WINDOW_Y + WINDOW_H - 38.0f, 8.5f,
             LinkenMenuChrome.rgba(LinkenMenuChrome.MUTED3, fade));
 
+        WindowMaterial.corners(context, WINDOW_X, WINDOW_Y, WINDOW_W, WINDOW_H, metrics.scale(), fade);
+
         if (pendingIncompatible != null) {
             drawIncompatibleModal(context, metrics, mx, my, fade, seconds);
         }
@@ -665,13 +667,17 @@ public final class LinkenResourcePacksScreen extends Screen {
         if (client == null) {
             return;
         }
+        Screen target = parent;
+        if (target == null || target == this) {
+            target = client.world != null ? new LinkenPauseScreen() : new LinkenMainMenuScreen();
+        }
         if (organizer != null) {
             organizer.apply();
             if (client.currentScreen == this) {
-                client.setScreen(parent);
+                client.setScreen(target);
             }
         } else {
-            client.setScreen(parent);
+            client.setScreen(target);
         }
     }
 

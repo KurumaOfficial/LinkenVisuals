@@ -48,7 +48,7 @@ public final class SplashFont {
 
     private SplashFont() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("LinkenVisuals/Splash");
+    private static final Logger LOGGER = LoggerFactory.getLogger("VisualsModification/Splash");
 
     public enum Face {
         GOLOS("golos"),

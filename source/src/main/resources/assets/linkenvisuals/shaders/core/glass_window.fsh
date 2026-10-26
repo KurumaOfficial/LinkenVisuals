@@ -9,20 +9,18 @@ layout(std140) uniform DynamicTransforms {
 
 uniform sampler2D Sampler0;
 
-in vec2 texCoord0;
+in vec2 quadCoord;
+in vec2 params;
 in vec4 vertexColor;
 
 out vec4 fragColor;
 
 void main() {
-    float uBase = floor(texCoord0.x);
-    vec2 normUV = vec2(clamp(texCoord0.x - uBase, 0.0, 1.0), clamp(texCoord0.y, 0.0, 1.0));
+    vec2 normUV = clamp(quadCoord, 0.0, 1.0);
     vec2 pixels = 1.0 / max(fwidth(normUV), vec2(0.0001));
     vec2 point = (normUV - 0.5) * pixels;
     vec2 half_size = pixels * 0.5;
-    // uBase is the corner radius in device pixels (radiusLevel * guiScale),
-    // encoded by GlassWindowPipeline in the integer part of U.
-    float radius = min(uBase, min(half_size.x, half_size.y));
+    float radius = min(params.x, min(half_size.x, half_size.y));
 
     vec2 delta = abs(point) - half_size + radius;
     float dist = length(max(delta, 0.0)) + min(max(delta.x, delta.y), 0.0) - radius;

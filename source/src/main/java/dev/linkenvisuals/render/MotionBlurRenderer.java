@@ -151,7 +151,7 @@ public final class MotionBlurRenderer {
                 fb.delete();
             } catch (Throwable t) {
                 dev.linkenvisuals.LinkenVisuals.LOGGER.warn(
-                    "[LinkenVisuals] MotionBlur framebuffer release failed: {}", t.getMessage());
+                    "[Visuals Modification] MotionBlur framebuffer release failed: {}", t.getMessage());
             }
         }
     }

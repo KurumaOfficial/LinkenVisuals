@@ -2,6 +2,8 @@ package dev.linkenvisuals.render;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.textures.FilterMode;
+import net.minecraft.client.gl.GpuSampler;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -12,6 +14,9 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.texture.AbstractTexture;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.system.MemoryUtil;
 
@@ -24,14 +29,21 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
 /**
- * JumpCircles renderer (Phase 5.7): expanding rings on jump.
- * Circles spawn when the player leaves the ground, expand and fade.
- * Drawn as line rings at END_MAIN using the shared line pipeline.
+ * JumpCircles renderer: authentic 1:1 Linken expanding textured rings on jump.
+ * Renders glowing textured quads flat on the ground using client/other/circle.png
+ * via the proven additive world billboard pipeline.
  */
 public final class JumpCirclesRenderer {
-    private static final int SEGMENTS = 48;
+    private static final Identifier CIRCLE_TEXTURE = LinkenVisuals.id("client/other/circle.png");
+    private static final float GLOW_SCALE = 1.15f;
     private static final long FADE_IN_MS = 500L;
     private static final long FADE_OUT_MS = 500L;
+    private static final long MIN_LIFETIME_MS = 600L;
+
+    // 2 quads per circle (inner + glow) × 6 vertices × 24 bytes = 288 bytes per circle.
+    // 16KB static direct buffer handles up to 56 simultaneous circles with zero allocations.
+    private static final ByteBuffer REUSABLE_BUFFER =
+        ByteBuffer.allocateDirect(16384).order(ByteOrder.nativeOrder());
 
     private record Circle(Vec3d pos, long spawnTime) {}
 
@@ -63,7 +75,7 @@ public final class JumpCirclesRenderer {
         boolean jumpPressed = client.options.jumpKey.isPressed();
         if (wasOnGround && !onGround && jumpPressed) {
             Vec3d pos = new Vec3d(client.player.getX(),
-                client.player.getBlockPos().getY() + 0.01, client.player.getZ());
+                client.player.getY() + 0.015, client.player.getZ());
             circles.add(new Circle(pos, System.currentTimeMillis()));
         }
         wasOnGround = onGround;
@@ -83,35 +95,46 @@ public final class JumpCirclesRenderer {
             return;
         }
 
+        AbstractTexture texture = client.getTextureManager().getTexture(CIRCLE_TEXTURE);
+        if (texture == null || texture.getGlTextureView() == null) {
+            return;
+        }
+
         Vec3d camPos = camera.getCameraPos();
         long now = System.currentTimeMillis();
-        long lifetimeMs = (long) (module.lifetime.value() * 1000f);
-        float baseRadius = module.size.value();
+        long lifetimeMs = Math.max(MIN_LIFETIME_MS, (long) (module.lifetime.value() * 1000f));
+        float baseRadius = Math.max(0.05f, module.size.value());
 
-        // Count segments for buffer sizing.
-        int totalSegments = 0;
+        // Clean expired circles.
         Iterator<Circle> it = circles.iterator();
         while (it.hasNext()) {
             Circle c = it.next();
             long age = now - c.spawnTime();
             if (age >= lifetimeMs) {
                 it.remove();
-            } else {
-                totalSegments += SEGMENTS;
             }
         }
-        if (totalSegments == 0) {
+        if (circles.isEmpty()) {
             return;
         }
 
-        ByteBuffer data = MemoryUtil.memAlloc(totalSegments * 2 * 28);
+        int theme = dev.linkenvisuals.ui.Theme.accent();
+        int baseR = (theme >> 16) & 0xFF;
+        int baseG = (theme >> 8) & 0xFF;
+        int baseB = theme & 0xFF;
+
+        int requiredBytes = circles.size() * 2 * 6 * 24;
+        boolean heapAlloc = requiredBytes > REUSABLE_BUFFER.capacity();
+        ByteBuffer data = heapAlloc ? MemoryUtil.memAlloc(requiredBytes) : REUSABLE_BUFFER;
         try {
+            data.clear();
+            int vertices = 0;
+
             for (Circle c : circles) {
                 long age = now - c.spawnTime();
-                float progress = (float) age / lifetimeMs;
-                // Expand: radius grows with progress.
-                float radius = baseRadius * (0.5f + progress * 1.5f);
-                // Alpha: fade in then out.
+                float progress = MathHelper.clamp((float) age / lifetimeMs, 0.0f, 1.0f);
+                float radius = baseRadius * (0.6f + progress * 0.9f);
+
                 float alpha;
                 if (age < FADE_IN_MS) {
                     alpha = (float) age / FADE_IN_MS;
@@ -124,25 +147,30 @@ public final class JumpCirclesRenderer {
                     continue;
                 }
 
-                double cx = c.pos().x - camPos.x;
-                double cy = c.pos().y - camPos.y;
-                double cz = c.pos().z - camPos.z;
-                float r = 1.0f, g = 1.0f, b = 1.0f; // white, could use theme color
+                int a255 = MathHelper.clamp(Math.round(alpha * 255.0f), 0, 255);
+                int ringColor = (a255 << 24) | (baseR << 16) | (baseG << 8) | baseB;
 
-                for (int i = 0; i < SEGMENTS; i++) {
-                    double a0 = Math.PI * 2.0 * i / SEGMENTS;
-                    double a1 = Math.PI * 2.0 * (i + 1) / SEGMENTS;
-                    float x0 = (float) (cx + Math.cos(a0) * radius);
-                    float z0 = (float) (cz + Math.sin(a0) * radius);
-                    float x1 = (float) (cx + Math.cos(a1) * radius);
-                    float z1 = (float) (cz + Math.sin(a1) * radius);
-                    float y = (float) cy;
-                    putVertex(data, x0, y, z0, r, g, b, alpha);
-                    putVertex(data, x1, y, z1, r, g, b, alpha);
-                }
+                // Glow color: fade toward white like donor
+                int glowA = MathHelper.clamp(Math.round(a255 * 0.45f), 0, 255);
+                int gr = Math.min(255, Math.round(baseR * 0.65f + 89));
+                int gg = Math.min(255, Math.round(baseG * 0.65f + 89));
+                int gb = Math.min(255, Math.round(baseB * 0.65f + 89));
+                int glowColor = (glowA << 24) | (gr << 16) | (gg << 8) | gb;
+
+                float cx = (float) (c.pos().x - camPos.x);
+                float cy = (float) (c.pos().y - camPos.y);
+                float cz = (float) (c.pos().z - camPos.z);
+
+                // Inner ring quad
+                putTexturedQuad(data, cx, cy, cz, radius, ringColor);
+                // Glow outer quad
+                putTexturedQuad(data, cx, cy, cz, radius * GLOW_SCALE, glowColor);
+
+                vertices += 12;
             }
+
             data.flip();
-            if (data.remaining() == 0) {
+            if (vertices == 0) {
                 return;
             }
 
@@ -150,25 +178,58 @@ public final class JumpCirclesRenderer {
             GpuBuffer verts = RenderSystem.getDevice().createBuffer(
                 () -> "linkenvisuals:jumpcircles", GpuBuffer.USAGE_VERTEX, data);
             GpuBufferSlice transforms = Pipelines.writeWorldTransforms();
+            GpuSampler sampler = texture.getSampler() != null
+                ? texture.getSampler()
+                : RenderSystem.getSamplerCache().get(FilterMode.LINEAR);
+
             try (RenderPass pass = encoder.createRenderPass(() -> "linkenvisuals:jumpcircles",
                 main.getColorAttachmentView(), OptionalInt.empty(),
                 main.getDepthAttachmentView(), OptionalDouble.empty())) {
-                pass.setPipeline(BlockOverlayPipelines.LINES);
+                pass.setPipeline(ParticlesPipelines.BILLBOARD);
                 Pipelines.bindWorldUniforms(pass, transforms);
+                pass.bindTexture("Sampler0", texture.getGlTextureView(), sampler);
                 pass.setVertexBuffer(0, verts);
-                pass.draw(0, data.remaining() / 28);
+                pass.draw(0, vertices);
             } finally {
                 verts.close();
             }
         } finally {
-            MemoryUtil.memFree(data);
+            if (heapAlloc) {
+                MemoryUtil.memFree(data);
+            }
         }
     }
 
+    private static void putTexturedQuad(ByteBuffer data, float cx, float cy, float cz,
+                                        float radius, int argb) {
+        float x0 = cx - radius;
+        float z0 = cz - radius;
+        float x1 = cx + radius;
+        float z1 = cz + radius;
+
+        // Quad in XZ plane (horizontal on ground):
+        // (x0, z0) -> UV (0, 0)
+        // (x1, z0) -> UV (1, 0)
+        // (x1, z1) -> UV (1, 1)
+        // (x0, z1) -> UV (0, 1)
+
+        putVertex(data, x0, cy, z0, 0.0f, 0.0f, argb);
+        putVertex(data, x1, cy, z0, 1.0f, 0.0f, argb);
+        putVertex(data, x1, cy, z1, 1.0f, 1.0f, argb);
+
+        putVertex(data, x0, cy, z0, 0.0f, 0.0f, argb);
+        putVertex(data, x1, cy, z1, 1.0f, 1.0f, argb);
+        putVertex(data, x0, cy, z1, 0.0f, 1.0f, argb);
+    }
+
     private static void putVertex(ByteBuffer data, float x, float y, float z,
-                                  float r, float g, float b, float a) {
+                                  float u, float v, int argb) {
         data.putFloat(x).putFloat(y).putFloat(z);
-        data.putFloat(r).putFloat(g).putFloat(b).putFloat(a);
+        data.putFloat(u).putFloat(v);
+        data.put((byte) ((argb >> 16) & 0xFF));
+        data.put((byte) ((argb >> 8) & 0xFF));
+        data.put((byte) (argb & 0xFF));
+        data.put((byte) ((argb >>> 24) & 0xFF));
     }
 
     public static void init() {

@@ -44,3 +44,15 @@ source/tools/cache_noice_enhanced/
 source/tools/extracted/
 source/tools/_dead_shaders_backup/
 *.tmp
+
+# Reference donor and original repositories (READ-ONLY)
+StrangeVisuals-1.21.11/
+linken/
+
+
+# User reference folders
+
+# User reference folders
+strange clickgui/
+пример 3д модели качественной/
+*пример*

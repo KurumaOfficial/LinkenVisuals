@@ -13,12 +13,17 @@ public final class Spring {
     }
 
     public void step(double target, double deltaSeconds) {
-        double dt = Math.min(deltaSeconds, 1.0 / 60.0);
-        int steps = Math.max(1, (int) Math.ceil(deltaSeconds / dt));
-        for (int i = 0; i < steps; i++) {
-            velocity += (target - value) * stiffness * dt;
-            velocity -= velocity * Math.min(1.0, damping * dt);
-            value += velocity * dt;
+        if (deltaSeconds <= 0.0) {
+            return;
+        }
+        double remaining = Math.min(deltaSeconds, 0.1);
+        double dt = 1.0 / 120.0; // 120Hz sub-stepping for rock-solid stability and zero jitter
+        while (remaining > 0.0) {
+            double stepDt = Math.min(remaining, dt);
+            double force = (target - value) * stiffness - velocity * damping;
+            velocity += force * stepDt;
+            value += velocity * stepDt;
+            remaining -= stepDt;
         }
         if (Math.abs(target - value) < 0.0005 && Math.abs(velocity) < 0.0005) {
             value = target;

@@ -57,6 +57,8 @@ public final class BlockOverlayRenderer {
     private static GpuBuffer uniforms;
     private static final ByteBuffer UNIFORM_DATA =
         ByteBuffer.allocateDirect(BlockOverlayPipelines.UNIFORM_SIZE).order(ByteOrder.nativeOrder());
+    private static final ByteBuffer REUSABLE_BUFFER =
+        ByteBuffer.allocateDirect(16384).order(ByteOrder.nativeOrder());
 
     private BlockOverlayRenderer() {
     }
@@ -79,7 +81,13 @@ public final class BlockOverlayRenderer {
         Box box = pendingBox;
         pendingBox = null;
         BlockOverlayModule module = Modules.blockOverlay();
-        if (box == null || module == null || !module.enabled()) {
+        if (module == null || !module.enabled()) {
+            return;
+        }
+        if (box == null) {
+            box = captureBox();
+        }
+        if (box == null) {
             return;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -100,16 +108,22 @@ public final class BlockOverlayRenderer {
         int fbHeight = Math.max(1, main.textureHeight);
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 
-        if (module.useShader.value() && Math.max(fillAlpha, outlineAlpha) > 0) {
+        boolean hasFill = module.fill.value() && fillAlpha > 0;
+        boolean hasOutline = outlineAlpha > 0;
+        if (!hasFill && !hasOutline) {
+            return;
+        }
+
+        if (module.useShader.value() && hasFill) {
             int shaderAlpha = Math.max(fillAlpha, Math.round(outlineAlpha * 0.72f));
             int base = palette.sample(animation + (float) ((box.minX + box.minY + box.minZ) * 0.05f));
             writeUniforms(encoder, animation * 4.0f, fbWidth, fbHeight, base, shaderAlpha);
-            drawTexturedBox(encoder, main, BlockOverlayPipelines.shader(mode), box);
-        } else if (module.fill.value() && fillAlpha > 0) {
+            drawTexturedBox(encoder, main, BlockOverlayPipelines.shader(mode), box.expand(0.003));
+        } else if (hasFill) {
             drawGradientFill(encoder, main, box, fillAlpha, animation, palette, mode);
         }
 
-        if (outlineAlpha > 0) {
+        if (hasOutline) {
             drawOutline(encoder, main, box, outlineAlpha, animation, palette);
         }
     }
@@ -150,62 +164,62 @@ public final class BlockOverlayRenderer {
             cachedLocalBox = local;
         }
         Vec3d cam = mc.gameRenderer.getCamera().getCameraPos();
-        return local.offset(pos).expand(0.003).offset(-cam.x, -cam.y, -cam.z);
+        return local.offset(pos).offset(-cam.x, -cam.y, -cam.z);
     }
 
     private static void writeUniforms(CommandEncoder encoder, float time, int fbWidth, int fbHeight,
                                       int baseRgb, int alpha) {
         float shaderAlpha = Math.max(0.52f, Math.min(1.0f, alpha / 255.0f));
         UNIFORM_DATA.clear();
-        UNIFORM_DATA.putFloat(time); // @0
-        UNIFORM_DATA.putFloat(0.0f); // @4 pad
-        UNIFORM_DATA.putFloat(fbWidth); // @8 screenSize.x
-        UNIFORM_DATA.putFloat(fbHeight); // @10 screenSize.y
-        UNIFORM_DATA.putFloat((baseRgb >> 16 & 0xFF) / 255.0f); // @16 baseColor.r
+        // uParams: x=time, y=alpha, z=zoomFactor, w=shaderAlpha
+        UNIFORM_DATA.putFloat(time);
+        UNIFORM_DATA.putFloat(shaderAlpha);
+        UNIFORM_DATA.putFloat(1.0f);
+        UNIFORM_DATA.putFloat(shaderAlpha);
+        // uScreen: xy=screenSize, zw=unused
+        UNIFORM_DATA.putFloat(fbWidth);
+        UNIFORM_DATA.putFloat(fbHeight);
+        UNIFORM_DATA.putFloat(0.0f);
+        UNIFORM_DATA.putFloat(0.0f);
+        // uColor: rgba=baseColor
+        UNIFORM_DATA.putFloat((baseRgb >> 16 & 0xFF) / 255.0f);
         UNIFORM_DATA.putFloat((baseRgb >> 8 & 0xFF) / 255.0f);
         UNIFORM_DATA.putFloat((baseRgb & 0xFF) / 255.0f);
-        UNIFORM_DATA.putFloat(shaderAlpha); // baseColor.a
-        UNIFORM_DATA.putFloat(shaderAlpha); // @32 alpha
-        UNIFORM_DATA.putFloat(1.0f); // @36 zoomFactor
-        UNIFORM_DATA.putFloat(0.0f); // @40 pad
-        UNIFORM_DATA.putFloat(0.0f); // @44 pad
+        UNIFORM_DATA.putFloat(shaderAlpha);
         UNIFORM_DATA.flip();
         encoder.writeToBuffer(uniforms.slice(), UNIFORM_DATA);
     }
 
     private static void drawTexturedBox(CommandEncoder encoder, Framebuffer main,
                                         RenderPipeline pipeline, Box box) {
-        ByteBuffer data = MemoryUtil.memAlloc(36 * 20);
-        try {
-            putTexturedFace(data, box.minX, box.minY, box.minZ, box.maxX, box.minY, box.minZ,
-                box.maxX, box.maxY, box.minZ, box.minX, box.maxY, box.minZ);
-            putTexturedFace(data, box.maxX, box.minY, box.maxZ, box.minX, box.minY, box.maxZ,
-                box.minX, box.maxY, box.maxZ, box.maxX, box.maxY, box.maxZ);
-            putTexturedFace(data, box.minX, box.minY, box.maxZ, box.minX, box.minY, box.minZ,
-                box.minX, box.maxY, box.minZ, box.minX, box.maxY, box.maxZ);
-            putTexturedFace(data, box.maxX, box.minY, box.minZ, box.maxX, box.minY, box.maxZ,
-                box.maxX, box.maxY, box.maxZ, box.maxX, box.maxY, box.minZ);
-            putTexturedFace(data, box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.minZ,
-                box.maxX, box.maxY, box.maxZ, box.minX, box.maxY, box.maxZ);
-            putTexturedFace(data, box.minX, box.minY, box.maxZ, box.maxX, box.minY, box.maxZ,
-                box.maxX, box.minY, box.minZ, box.minX, box.minY, box.minZ);
-            data.flip();
-            GpuBuffer verts = RenderSystem.getDevice().createBuffer(
-                () -> "linkenvisuals:block_overlay_fill", GpuBuffer.USAGE_VERTEX, data);
-            GpuBufferSlice transforms = Pipelines.writeWorldTransforms();
-            try (RenderPass pass = encoder.createRenderPass(() -> "linkenvisuals:block_overlay",
-                main.getColorAttachmentView(), OptionalInt.empty(),
-                main.getDepthAttachmentView(), OptionalDouble.empty())) {
-                pass.setPipeline(pipeline);
-                Pipelines.bindWorldUniforms(pass, transforms);
-                pass.setUniform("BlockOverlay", uniforms);
-                pass.setVertexBuffer(0, verts);
-                pass.draw(0, 36);
-            } finally {
-                verts.close();
-            }
+        ByteBuffer data = REUSABLE_BUFFER;
+        data.clear();
+        putTexturedFace(data, box.minX, box.minY, box.minZ, box.maxX, box.minY, box.minZ,
+            box.maxX, box.maxY, box.minZ, box.minX, box.maxY, box.minZ);
+        putTexturedFace(data, box.maxX, box.minY, box.maxZ, box.minX, box.minY, box.maxZ,
+            box.minX, box.maxY, box.maxZ, box.maxX, box.maxY, box.maxZ);
+        putTexturedFace(data, box.minX, box.minY, box.maxZ, box.minX, box.minY, box.minZ,
+            box.minX, box.maxY, box.minZ, box.minX, box.maxY, box.maxZ);
+        putTexturedFace(data, box.maxX, box.minY, box.minZ, box.maxX, box.minY, box.maxZ,
+            box.maxX, box.maxY, box.maxZ, box.maxX, box.maxY, box.minZ);
+        putTexturedFace(data, box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.minZ,
+            box.maxX, box.maxY, box.maxZ, box.minX, box.maxY, box.maxZ);
+        putTexturedFace(data, box.minX, box.minY, box.maxZ, box.maxX, box.minY, box.maxZ,
+            box.maxX, box.minY, box.minZ, box.minX, box.minY, box.minZ);
+        data.flip();
+        GpuBuffer verts = RenderSystem.getDevice().createBuffer(
+            () -> "linkenvisuals:block_overlay_fill", GpuBuffer.USAGE_VERTEX, data);
+        GpuBufferSlice transforms = Pipelines.writeWorldTransforms();
+        try (RenderPass pass = encoder.createRenderPass(() -> "linkenvisuals:block_overlay",
+            main.getColorAttachmentView(), OptionalInt.empty(),
+            main.getDepthAttachmentView(), OptionalDouble.empty())) {
+            pass.setPipeline(pipeline);
+            Pipelines.bindWorldUniforms(pass, transforms);
+            pass.setUniform("BlockOverlay", uniforms);
+            pass.setVertexBuffer(0, verts);
+            pass.draw(0, 36);
         } finally {
-            MemoryUtil.memFree(data);
+            verts.close();
         }
     }
 
@@ -228,73 +242,70 @@ public final class BlockOverlayRenderer {
     private static void drawGradientFill(CommandEncoder encoder, Framebuffer main, Box box,
                                          int alpha, float animation, Palette palette,
                                          BlockOverlayModule.FillMode mode) {
-        // Segmented vertical gradient + glow layers, mirroring the donor's non-shader path.
-        // Worst case: 8 segments + 3 glow layers, 36 verts each, 16 bytes per vert.
-        ByteBuffer data = MemoryUtil.memAlloc(8192);
-        try {
+        if (mode == BlockOverlayModule.FillMode.COSMOS) {
+            float phase = animation + (float) ((box.minX + box.minY + box.minZ) * 0.04f);
+            int base = palette.sample(phase);
+            int baseAlpha = Math.max(10, Math.round(alpha * 0.7f));
+            ByteBuffer data = REUSABLE_BUFFER;
             data.clear();
-            if (mode == BlockOverlayModule.FillMode.COSMOS) {
-                float phase = animation + (float) ((box.minX + box.minY + box.minZ) * 0.04f);
-                int base = palette.sample(phase);
-                putColoredBox(data, box, ColorMath.withAlpha(base, Math.max(10, Math.round(alpha * 0.7f))));
-                for (int layer = 0; layer < 3; layer++) {
-                    float glowFactor = 1.0f - layer / 3.0f;
-                    int glowAlpha = Math.round(alpha * (palette.glowMinAlpha + palette.glowAlphaRange * glowFactor));
-                    putColoredBox(data, box.expand(0.0018 * (layer + 1)),
-                        ColorMath.withAlpha(base, glowAlpha));
-                }
-            } else {
-                double height = Math.max(0.001, box.maxY - box.minY);
-                int segments = Math.max(4, Math.min(8, (int) Math.ceil(height * 6.0)));
-                for (int i = 0; i < segments; i++) {
-                    float progress = i / (float) segments;
-                    double minY = MathHelper.lerp(progress, box.minY, box.maxY);
-                    double maxY = MathHelper.lerp((i + 1f) / segments, box.minY, box.maxY);
-                    int color = palette.sample(animation + progress * 0.45f
-                        + (float) ((box.minX + box.minZ) * 0.035f));
-                    int segmentAlpha = Math.max(10,
-                        Math.round(alpha * (palette.baseMinAlpha + palette.baseAlphaRange * (1.0f - progress))));
-                    putColoredBox(data,
-                        new Box(box.minX, minY, box.minZ, box.maxX, maxY, box.maxZ),
-                        ColorMath.withAlpha(color, segmentAlpha));
-                }
-                for (int layer = 0; layer < 3; layer++) {
-                    float glowFactor = 1.0f - layer / 3.0f;
-                    int color = palette.sample(animation + 0.16f * layer + (float) (box.minY * 0.05f));
-                    int glowAlpha = Math.round(alpha * (palette.glowMinAlpha + palette.glowAlphaRange * glowFactor));
-                    putColoredBox(data, box.expand(0.0018 * (layer + 1)),
-                        ColorMath.withAlpha(color, glowAlpha));
-                }
+            putColoredBox(data, box, ColorMath.withAlpha(base, baseAlpha));
+            for (int glowLayer = 0; glowLayer < 3; glowLayer++) {
+                double glowExpand = 0.0018 * (glowLayer + 1);
+                float glowFactor = 1.0f - glowLayer / 3.0f;
+                int glowAlpha = Math.round(alpha * (palette.glowMinAlpha + palette.glowAlphaRange * glowFactor));
+                putColoredBox(data, box.expand(glowExpand), ColorMath.withAlpha(base, glowAlpha));
             }
             data.flip();
             drawColored(encoder, main, BlockOverlayPipelines.FLAT, data);
-        } finally {
-            MemoryUtil.memFree(data);
+            return;
         }
+
+        double height = Math.max(0.001, box.maxY - box.minY);
+        int segments = Math.max(4, Math.min(8, (int) Math.ceil(height * 6.0)));
+        ByteBuffer data = REUSABLE_BUFFER;
+        data.clear();
+
+        for (int i = 0; i < segments; i++) {
+            float progress = i / (float) segments;
+            double segmentMinY = MathHelper.lerp(progress, box.minY, box.maxY);
+            double segmentMaxY = MathHelper.lerp((i + 1f) / segments, box.minY, box.maxY);
+            int color = palette.sample(animation + progress * 0.45f + (float) ((box.minX + box.minZ) * 0.035f));
+            int segmentAlpha = Math.max(10, Math.round(alpha * (palette.baseMinAlpha + palette.baseAlphaRange * (1.0f - progress))));
+            putColoredBox(data, new Box(box.minX, segmentMinY, box.minZ, box.maxX, segmentMaxY, box.maxZ),
+                ColorMath.withAlpha(color, segmentAlpha));
+        }
+
+        for (int glowLayer = 0; glowLayer < 3; glowLayer++) {
+            double glowExpand = 0.0018 * (glowLayer + 1);
+            float glowFactor = 1.0f - glowLayer / 3.0f;
+            int color = palette.sample(animation + 0.16f * glowLayer + (float) (box.minY * 0.05f));
+            int glowAlpha = Math.round(alpha * (palette.glowMinAlpha + palette.glowAlphaRange * glowFactor));
+            putColoredBox(data, box.expand(glowExpand), ColorMath.withAlpha(color, glowAlpha));
+        }
+
+        data.flip();
+        drawColored(encoder, main, BlockOverlayPipelines.FLAT, data);
     }
 
     private static void drawOutline(CommandEncoder encoder, Framebuffer main, Box box,
                                     int alpha, float animation, Palette palette) {
         int base = palette.sample(animation + (float) ((box.minX + box.minZ) * 0.05f));
         int glowRgb = ColorMath.mix(base, 0xFFFFFF, 0.35f);
-        ByteBuffer data = MemoryUtil.memAlloc(3 * 24 * 16);
-        try {
-            data.clear();
-            for (int i = 0; i < 2; i++) {
-                float strength = 1.0f - i * 0.45f;
-                int glowAlpha = Math.max(8, Math.round(alpha * 0.24f * strength));
-                putLineBox(data, box.expand(0.0012 * (i + 1)), ColorMath.withAlpha(glowRgb, glowAlpha));
-            }
-            putLineBox(data, box, ColorMath.withAlpha(base, alpha));
-            data.flip();
-            drawColored(encoder, main, BlockOverlayPipelines.LINES, data);
-        } finally {
-            MemoryUtil.memFree(data);
+        ByteBuffer data = REUSABLE_BUFFER;
+        data.clear();
+        for (int i = 0; i < 2; i++) {
+            float strength = 1.0f - i * 0.45f;
+            int glowAlpha = Math.max(8, Math.round(alpha * 0.24f * strength));
+            putLineBox(data, box.expand(0.0012 * (i + 1)), ColorMath.withAlpha(glowRgb, glowAlpha));
         }
+        putLineBox(data, box, ColorMath.withAlpha(base, alpha));
+        data.flip();
+        drawColored(encoder, main, BlockOverlayPipelines.LINES, data);
     }
 
     private static void drawColored(CommandEncoder encoder, Framebuffer main,
                                     RenderPipeline pipeline, ByteBuffer data) {
+        int vertices = data.remaining() / 16;
         GpuBuffer verts = RenderSystem.getDevice().createBuffer(
             () -> "linkenvisuals:block_overlay_color", GpuBuffer.USAGE_VERTEX, data);
         GpuBufferSlice transforms = Pipelines.writeWorldTransforms();
@@ -304,7 +315,7 @@ public final class BlockOverlayRenderer {
             pass.setPipeline(pipeline);
             Pipelines.bindWorldUniforms(pass, transforms);
             pass.setVertexBuffer(0, verts);
-            pass.draw(0, data.remaining() / 16);
+            pass.draw(0, vertices);
         } finally {
             verts.close();
         }

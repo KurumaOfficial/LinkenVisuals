@@ -21,7 +21,19 @@ public final class Sweep {
     private static int wasColor;
     private static float wasRim;
 
+    private static final float[][] COS_TABLE = new float[MAX_SIDES + 1][];
+    private static final float[][] SIN_TABLE = new float[MAX_SIDES + 1][];
+
     static {
+        for (int s = 3; s <= MAX_SIDES; s++) {
+            COS_TABLE[s] = new float[s];
+            SIN_TABLE[s] = new float[s];
+            for (int i = 0; i < s; i++) {
+                double angle = Math.PI * 2.0 * i / s;
+                COS_TABLE[s][i] = (float) Math.cos(angle);
+                SIN_TABLE[s][i] = (float) Math.sin(angle);
+            }
+        }
         for (int i = 0; i < MAX_SIDES; i++) {
             wasAt[i] = new Vector3f();
             wasNormal[i] = new Vector3f();
@@ -107,10 +119,11 @@ public final class Sweep {
 
     private static void build(CosmeticContext ctx, Vector3f centre, float acrossRight,
                               float acrossUp, int color, float rimStrength, int rimColor) {
+        float[] cosArr = COS_TABLE[sides];
+        float[] sinArr = SIN_TABLE[sides];
         for (int i = 0; i < sides; i++) {
-            double angle = Math.PI * 2.0 * i / sides;
-            float cos = (float) Math.cos(angle);
-            float sin = (float) Math.sin(angle);
+            float cos = cosArr[i];
+            float sin = sinArr[i];
             nowAt[i].set(centre).fma(cos * acrossRight, right).fma(sin * acrossUp, up);
 
             nowNormal[i].set(0.0f, 0.0f, 0.0f)

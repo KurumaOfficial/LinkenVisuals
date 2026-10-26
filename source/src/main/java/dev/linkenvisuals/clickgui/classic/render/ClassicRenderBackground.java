@@ -12,7 +12,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
 
 public final class ClassicRenderBackground {
-    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/logo.png");
+    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/strange_logo.png");
 
     private ClassicRenderBackground() {
     }
@@ -38,7 +38,7 @@ public final class ClassicRenderBackground {
         // Header logo & text
         int textCol = ColorUtil.getTextColor(1, 1);
         RenderUtil.Image.draw(ctx, LOGO, x + 8, y + 8, 16, 16, ColorUtil.replAlpha(textCol, 204));
-        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, "Linken Visuals", x + 28, y + 15, 8, ColorUtil.replAlpha(textCol, 204));
+        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, "Strange Visuals", x + 28, y + 15, 8, ColorUtil.replAlpha(textCol, 204));
         FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, "FREE", x + 28, y + 22, 5, ColorUtil.replAlpha(textCol, 127));
 
         // Search bar at the bottom

@@ -96,10 +96,26 @@ public abstract class LivingEntityRendererMixin {
                                              int color, Sprite sprite, int outlineColor,
                                              ModelCommandRenderer.CrumblingOverlayCommand crumbling,
                                              Operation<Void> original) {
-        if (state instanceof PlayerEntityRenderState playerState && model instanceof PlayerEntityModel playerModel
-                && RudyCharacter.active(playerState) && RudyCharacter.available()) {
-            RudyCharacter.submit(queue, matrices, playerModel, playerState, light, overlay, color);
-            return;
+        if (state instanceof PlayerEntityRenderState playerState && model instanceof PlayerEntityModel playerModel) {
+            if (RudyCharacter.active(playerState) && RudyCharacter.available()) {
+                RudyCharacter.submit(queue, matrices, playerModel, playerState, light, overlay, color);
+                return;
+            }
+            if (dev.linkenvisuals.cosmetic.character.RobloxBaconCharacter.active(playerState)
+                    && dev.linkenvisuals.cosmetic.character.RobloxBaconCharacter.available()) {
+                dev.linkenvisuals.cosmetic.character.RobloxBaconCharacter.submit(queue, matrices, playerModel, playerState, light, overlay, color);
+                return;
+            }
+            if (dev.linkenvisuals.cosmetic.character.JasonCharacter.active(playerState)
+                    && dev.linkenvisuals.cosmetic.character.JasonCharacter.available()) {
+                dev.linkenvisuals.cosmetic.character.JasonCharacter.submit(queue, matrices, playerModel, playerState, light, overlay, color);
+                return;
+            }
+            if (dev.linkenvisuals.cosmetic.character.AstolfoMesh.active(playerState)
+                    && dev.linkenvisuals.cosmetic.character.AstolfoMesh.available()) {
+                dev.linkenvisuals.cosmetic.character.AstolfoMesh.submit(queue, matrices, playerModel, playerState, light, overlay, color);
+                return;
+            }
         }
         original.call(queue, model, state, matrices, layer, light, overlay, color, sprite, outlineColor, crumbling);
     }

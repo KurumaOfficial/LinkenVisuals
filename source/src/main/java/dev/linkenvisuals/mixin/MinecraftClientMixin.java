@@ -8,7 +8,6 @@ import dev.linkenvisuals.ui.linkmenu.LinkenMainMenuScreen;
 import dev.linkenvisuals.ui.linkmenu.LinkenMultiplayerScreen;
 import dev.linkenvisuals.ui.linkmenu.LinkenPauseScreen;
 import dev.linkenvisuals.ui.linkmenu.LinkenResourcePacksScreen;
-import dev.linkenvisuals.ui.linkmenu.LinkenSelectWorldScreen;
 import dev.linkenvisuals.ui.linkmenu.LinkenSettingsScreen;
 import dev.linkenvisuals.ui.linkmenu.LinkenSkinScreen;
 import dev.linkenvisuals.ui.style.MenuStyle;
@@ -30,10 +29,17 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 public abstract class MinecraftClientMixin {
     @ModifyVariable(method = "setScreen", at = @At("HEAD"), argsOnly = true)
     private Screen linkenvisuals$redirectTitleScreen(Screen screen) {
+        MenuStyle style = StyleManager.getStyle();
         if (screen == null) {
+            if (MinecraftClient.getInstance().world == null) {
+                return switch (style) {
+                    case VANILLA -> new TitleScreen();
+                    case BETA -> new MainMenuScreen();
+                    case LINKEN -> new LinkenMainMenuScreen();
+                };
+            }
             return null;
         }
-        MenuStyle style = StyleManager.getStyle();
         return switch (style) {
             case VANILLA -> linkenvisuals$vanilla(screen);
             case BETA -> linkenvisuals$beta(screen);
@@ -72,17 +78,42 @@ public abstract class MinecraftClientMixin {
         if (screen instanceof GameMenuScreen) {
             return new LinkenPauseScreen();
         }
-        if (screen instanceof OptionsScreen) {
-            // setScreen has not replaced currentScreen yet, so this is the
-            // screen the user opened options from.
-            Screen parent = MinecraftClient.getInstance().currentScreen;
+        if (screen instanceof OptionsScreen optionsScreen) {
+            Screen parent = null;
+            try {
+                parent = ((OptionsScreenAccessor) optionsScreen).linkenvisuals$getParent();
+            } catch (Throwable ignored) {
+            }
+            if (parent == null || parent == optionsScreen || parent instanceof OptionsScreen || parent instanceof LinkenSettingsScreen) {
+                parent = MinecraftClient.getInstance().currentScreen;
+            }
+            if (parent == null || parent == optionsScreen || parent instanceof OptionsScreen || parent instanceof LinkenSettingsScreen) {
+                parent = MinecraftClient.getInstance().world != null
+                    ? new LinkenPauseScreen()
+                    : new LinkenMainMenuScreen();
+            }
             return new LinkenSettingsScreen(parent);
         }
-        if (screen instanceof SkinOptionsScreen) {
-            return new LinkenSkinScreen(MinecraftClient.getInstance().currentScreen);
+        if (screen instanceof SkinOptionsScreen skinOptions) {
+            Screen parent = null;
+            try {
+                parent = ((GameOptionsScreenAccessor) skinOptions).linkenvisuals$getParent();
+            } catch (Throwable ignored) {
+            }
+            if (parent == null || parent == skinOptions) {
+                parent = MinecraftClient.getInstance().currentScreen;
+            }
+            if (parent == null || parent == skinOptions) {
+                parent = new LinkenSettingsScreen(null);
+            }
+            return new LinkenSkinScreen(parent);
         }
         if (screen instanceof PackScreen) {
-            return new LinkenResourcePacksScreen(MinecraftClient.getInstance().currentScreen);
+            Screen parent = MinecraftClient.getInstance().currentScreen;
+            if (parent == null || parent instanceof PackScreen) {
+                parent = new LinkenSettingsScreen(null);
+            }
+            return new LinkenResourcePacksScreen(parent);
         }
         if (screen instanceof AltManagerScreen) {
             return new LinkenAltManagerScreen(MinecraftClient.getInstance().currentScreen);
@@ -94,9 +125,6 @@ public abstract class MinecraftClientMixin {
         }
         if (screen instanceof MultiplayerScreen) {
             return new LinkenMultiplayerScreen(MinecraftClient.getInstance().currentScreen);
-        }
-        if (screen instanceof SelectWorldScreen && !(screen instanceof LinkenSelectWorldScreen)) {
-            return new LinkenSelectWorldScreen(MinecraftClient.getInstance().currentScreen);
         }
         return screen;
     }

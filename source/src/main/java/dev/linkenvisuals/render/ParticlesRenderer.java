@@ -150,23 +150,24 @@ public final class ParticlesRenderer {
 
         float tickDelta = client.getRenderTickCounter().getTickProgress(true);
         Vec3d camPos = camera.getCameraPos();
-        Vector3fc right = camera.getHorizontalPlane();
-        Vector3fc up = camera.getVerticalPlane();
+        Vector3fc right = new Vector3f(1.0f, 0.0f, 0.0f).rotate(camera.getRotation());
+        Vector3fc up = new Vector3f(0.0f, 1.0f, 0.0f).rotate(camera.getRotation());
+        Frustum frustum = client.worldRenderer.getCapturedFrustum();
         String mode = module.mode.current();
         boolean cube = "Cube".equals(mode);
         float settingSize = Math.max(0.0f, module.particleSize.value());
 
         if (cube) {
-            renderCubes(client, main, module, tickDelta, camPos);
+            renderCubes(client, main, module, tickDelta, camPos, frustum);
         } else {
-            renderBillboards(client, main, module, mode, tickDelta, camPos, right, up, settingSize);
+            renderBillboards(client, main, module, mode, tickDelta, camPos, right, up, settingSize, frustum);
         }
     }
 
     private static void renderBillboards(MinecraftClient client, Framebuffer main,
                                          ParticlesModule module, String mode, float tickDelta,
                                          Vec3d camPos, Vector3fc right, Vector3fc up,
-                                         float settingSize) {
+                                         float settingSize, Frustum frustum) {
         Identifier textureId = texture(mode);
         AbstractTexture texture = client.getTextureManager().getTexture(textureId);
         if (texture == null || texture.getGlTextureView() == null) {
@@ -177,7 +178,7 @@ public final class ParticlesRenderer {
         try {
             for (Particle particle : PARTICLES) {
                 Vec3d renderPos = particle.getRenderPos(tickDelta);
-                if (!isInView(client, renderPos)
+                if (!isInView(frustum, renderPos)
                     || !hasLineOfSight(client, particle, renderPos, camPos)) {
                     continue;
                 }
@@ -237,13 +238,14 @@ public final class ParticlesRenderer {
     }
 
     private static void renderCubes(MinecraftClient client, Framebuffer main,
-                                    ParticlesModule module, float tickDelta, Vec3d camPos) {
+                                    ParticlesModule module, float tickDelta, Vec3d camPos,
+                                    Frustum frustum) {
         boolean glow = module.cubeGlow.value();
         float glowScale = Math.max(0.0f, module.cubeGlowSize.value());
         List<CubeDraw> draws = new ArrayList<>();
         for (Particle particle : PARTICLES) {
             Vec3d renderPos = particle.getRenderPos(tickDelta);
-            if (!isInView(client, renderPos)
+            if (!isInView(frustum, renderPos)
                 || !hasLineOfSight(client, particle, renderPos, camPos)) {
                 continue;
             }
@@ -395,8 +397,7 @@ public final class ParticlesRenderer {
         return particle.losResult;
     }
 
-    private static boolean isInView(MinecraftClient client, Vec3d pos) {
-        Frustum frustum = client.worldRenderer.getCapturedFrustum();
+    private static boolean isInView(Frustum frustum, Vec3d pos) {
         if (frustum == null) {
             return true;
         }

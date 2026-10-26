@@ -183,7 +183,7 @@ public final class AmbiencePipeline {
         try {
             fb.delete();
         } catch (Throwable t) {
-            dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Framebuffer release failed: {}", t.getMessage());
+            dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Framebuffer release failed: {}", t.getMessage());
         }
     }
 }

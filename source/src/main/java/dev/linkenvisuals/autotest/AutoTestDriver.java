@@ -827,15 +827,15 @@ public final class AutoTestDriver {
         add("screenshot ClickGUI", 1, () -> screenshot(client, "clickgui"));
         add("close ClickGUI", 4, () -> client.setScreen(null));
 
-        add("open LINKEN main menu", 13, () -> client.setScreen(new LinkenMainMenuScreen()));
+        add("open editorial main menu", 13, () -> client.setScreen(new LinkenMainMenuScreen()));
         add("wait welcome", 20, () -> {
         });
         add("screenshot welcome", 1, () -> screenshot(client, "welcome"));
         add("skip welcome", 1, LinkenMainMenuScreen::skipWelcome);
-        add("wait LINKEN main menu", 8, () -> {
+        add("wait editorial main menu", 8, () -> {
         });
-        add("screenshot LINKEN main menu", 1, () -> screenshot(client, "linken-mainmenu"));
-        add("close LINKEN main menu", 4, () -> client.setScreen(null));
+        add("screenshot editorial main menu", 1, () -> screenshot(client, "editorial-mainmenu"));
+        add("close editorial main menu", 4, () -> client.setScreen(null));
 
         boolean pinWasSet = LinkGuiConfig.pinned("ClickGUI");
         add("pin link test", 1, () -> {
@@ -1076,18 +1076,18 @@ public final class AutoTestDriver {
             FakePlayer.clear();
         });
 
-        add("open LINKEN pause", 8, () -> client.setScreen(new GameMenuScreen(true)));
-        add("check LINKEN pause route", 1, () -> {
+        add("open alternative pause", 8, () -> client.setScreen(new GameMenuScreen(true)));
+        add("check alternative pause route", 1, () -> {
             if (dev.linkenvisuals.BuildFlavor.STRANGE) {
                 if (!(client.currentScreen instanceof GameMenuScreen)) {
-                    throw new IllegalStateException("Strange build must keep the vanilla GameMenuScreen");
+                    throw new IllegalStateException("Alternative visuals modification build must keep the vanilla GameMenuScreen");
                 }
             } else if (!(client.currentScreen instanceof LinkenPauseScreen)) {
                 throw new IllegalStateException("GameMenuScreen was not routed to LinkenPauseScreen");
             }
         });
-        add("screenshot LINKEN pause", 2, () -> screenshot(client, "pause"));
-        add("close LINKEN pause", 2, () -> client.setScreen(null));
+        add("screenshot alternative pause", 2, () -> screenshot(client, "pause"));
+        add("close alternative pause", 2, () -> client.setScreen(null));
 
         add("jump pressed", 1, () -> client.options.jumpKey.setPressed(true));
         add("jump released", 4, () -> client.options.jumpKey.setPressed(false));
@@ -1469,7 +1469,7 @@ public final class AutoTestDriver {
             String stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(LocalDateTime.now());
             Path file = dir.resolve("linkenvisuals-autotest-" + stamp + ".log");
             StringBuilder out = new StringBuilder(2048);
-            out.append("LinkenVisuals in-game auto-test\n");
+            out.append("Visuals Modification in-game auto-test\n");
             out.append("when: ").append(LocalDateTime.now()).append('\n');
             out.append("finish: ").append(reason).append('\n');
             out.append("dimension: ").append(client.world != null

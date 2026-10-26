@@ -94,12 +94,12 @@ public final class LinkenSkinScreen extends Screen {
                 return textures;
             }
         } catch (RuntimeException unavailable) {
-            LinkenVisuals.LOGGER.debug("LINKEN skin preview lookup failed: {}", unavailable.getMessage());
+            LinkenVisuals.LOGGER.debug("[Visuals Modification] Skin preview lookup failed: {}", unavailable.getMessage());
         }
         try {
             return DefaultSkinHelper.getSkinTextures(client.getGameProfile());
         } catch (RuntimeException unavailable) {
-            LinkenVisuals.LOGGER.debug("LINKEN default skin preview failed: {}", unavailable.getMessage());
+            LinkenVisuals.LOGGER.debug("[Visuals Modification] Default skin preview failed: {}", unavailable.getMessage());
             return null;
         }
     }
@@ -191,6 +191,8 @@ public final class LinkenSkinScreen extends Screen {
         LinkenMenuChrome.drawText(context, LinkenFonts.body(), "ESC  /  BACK",
             WINDOW_X + PAD, WINDOW_Y + WINDOW_H - 40.0f, 9.0f,
             LinkenMenuChrome.rgba(LinkenMenuChrome.MUTED3, fade));
+
+        WindowMaterial.corners(context, WINDOW_X, WINDOW_Y, WINDOW_W, WINDOW_H, metrics.scale(), fade);
     }
 
     private void drawPreview(DrawContext context, LinkenMenuLayout.Metrics metrics, float mx, float my,
@@ -406,7 +408,11 @@ public final class LinkenSkinScreen extends Screen {
     @Override
     public void close() {
         if (client != null) {
-            client.setScreen(parent);
+            Screen target = parent;
+            if (target == null || target == this) {
+                target = client.world != null ? new LinkenPauseScreen() : new LinkenMainMenuScreen();
+            }
+            client.setScreen(target);
         }
     }
 }

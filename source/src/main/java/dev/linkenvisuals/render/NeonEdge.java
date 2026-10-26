@@ -16,14 +16,22 @@ public final class NeonEdge {
     }
 
     public static void frame(DrawContext context, float x, float y, float w, float h, int seed, float intensity) {
-        frame(context, x, y, w, h, seed, intensity, cool());
+        frame(context, x, y, w, h, (float) Theme.radiusLevel(), seed, intensity, cool());
     }
 
     public static void frame(DrawContext context, float x, float y, float w, float h, int seed, float intensity, int color) {
+        frame(context, x, y, w, h, (float) Theme.radiusLevel(), seed, intensity, color);
+    }
+
+    public static void frame(DrawContext context, float x, float y, float w, float h, float radius, int seed, float intensity) {
+        frame(context, x, y, w, h, radius, seed, intensity, cool());
+    }
+
+    public static void frame(DrawContext context, float x, float y, float w, float h, float radius, int seed, float intensity, int color) {
         if (intensity <= 0.01f || w <= 2.0f || h <= 2.0f) {
             return;
         }
-        RoundedRectPipeline.drawOutline(context, x, y, w, h,
+        RoundedRectPipeline.drawOutline(context, x, y, w, h, radius,
             Math.round(26.0f * intensity) << 24 | 0xFFFFFF);
 
         float reach = Math.min(w * 0.62f, w - 8.0f);

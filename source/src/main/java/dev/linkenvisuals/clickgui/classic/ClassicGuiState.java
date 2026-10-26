@@ -13,7 +13,7 @@ import java.util.Locale;
 public final class ClassicGuiState {
     public static final float MODULE_PANEL_X_OFFSET = 7.0F;
     public static final float MODULE_PANEL_Y_OFFSET = 48.0F;
-    public static final float MODULE_PANEL_WIDTH = 195.0F;
+    public static final float MODULE_PANEL_WIDTH = 211.0F;
     public static final float MODULE_HEADER_HEIGHT = 22.0F;
     public static final float MODULE_VERTICAL_SPACING = 26.0F;
 

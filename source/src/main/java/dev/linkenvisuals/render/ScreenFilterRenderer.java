@@ -145,7 +145,7 @@ public final class ScreenFilterRenderer {
             try {
                 sceneCopy.delete();
             } catch (Throwable t) {
-                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Screen-filter buffer release failed: {}", t.getMessage());
+                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Screen-filter buffer release failed: {}", t.getMessage());
             }
             sceneCopy = null;
         }
@@ -158,7 +158,7 @@ public final class ScreenFilterRenderer {
             try {
                 instance.close();
             } catch (Throwable t) {
-                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Screen-filter shutdown failed: {}", t.getMessage());
+                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Screen-filter shutdown failed: {}", t.getMessage());
             }
         }
     }

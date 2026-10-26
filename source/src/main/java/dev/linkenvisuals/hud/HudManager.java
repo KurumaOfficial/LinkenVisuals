@@ -34,13 +34,10 @@ public final class HudManager {
     private static final float MENU_PAD = 4.0f;
     private static final float MENU_GAP = 6.0f;
 
-    private static final List<HudElement> ELEMENTS = List.of(new TargetHud(), new CoordinatesHud(),
-        new CooldownsHud(), new ArmorHud(), new InventoryHud(),
-        new Watermark(), new KeybindPanel(),
-        new MediaPlayerHud(), new TotemCounterHud(), new UseTrackerHud(),
-        new PotionSlot(0), new PotionSlot(1), new PotionSlot(2), new PotionSlot(3), new PotionBlock(),
-        new ScoreboardHud(), new LowArmorNotificationsHud(), new KillStreakHud(),
-        new HelperItemsHud());
+    private static final List<HudElement> ELEMENTS = List.of(
+        new TargetHud(), new CoordinatesHud(), new CooldownsHud(), new ArmorHud(),
+        new InventoryHud(), new Watermark(), new KeybindPanel(), new PotionHud(),
+        new ScoreboardHud(), new LowArmorNotificationsHud(), new HelperItemsHud());
     private static final Spring gridReveal = new Spring(0.0, 700.0, 32.0);
     private static final Spring dragBlur = new Spring(0.0, 900.0, 40.0);
 
@@ -89,7 +86,6 @@ public final class HudManager {
         float deltaSeconds = (float) Math.min((now - lastFrame) / 1_000_000_000.0, 0.05);
         lastFrame = now;
 
-        PotionEffectTracker.refresh();
         NameTags.render(context);
         dev.linkenvisuals.render.ItemRadiusRenderer.renderLabels(context);
         dev.linkenvisuals.render.FortniteDamageRenderer.render(context);
@@ -115,7 +111,7 @@ public final class HudManager {
                 // context. Logged once: this path runs every frame while an element is dragged.
                 if (!blurUnsupportedLogged) {
                     blurUnsupportedLogged = true;
-                    LinkenVisuals.LOGGER.warn("[LinkenVisuals] HUD drag blur unavailable: {}", e.toString());
+                    LinkenVisuals.LOGGER.warn("[Visuals Modification] HUD drag blur unavailable: {}", e.toString());
                 }
             }
             int veilAlpha = Math.round(45 * blurAmount);
@@ -160,10 +156,6 @@ public final class HudManager {
         }
         CustomVitalsHud.render(context);
         NotificationManager.render(context);
-
-        if (editMode && menuOpen) {
-            renderContextMenu(context);
-        }
     }
 
     public static void setEditing(boolean editing) {
@@ -175,7 +167,7 @@ public final class HudManager {
     }
 
     private static boolean isPotionElement(HudElement element) {
-        return element instanceof PotionSlot || element instanceof PotionBlock;
+        return element instanceof PotionHud;
     }
 
     private static void updateDragging(MinecraftClient client) {
@@ -194,21 +186,11 @@ public final class HudManager {
         float mouseY = (float) (CURSOR_Y[0] * screenHeight / client.getWindow().getHeight());
 
         if (rightMouseDown && !previousRightMouseDown) {
-            HudElement target = findElementAt(mouseX, mouseY, screenWidth, screenHeight);
-            if (isPotionElement(target)) {
-                openContextMenu(target, screenWidth, screenHeight);
-            } else {
-                menuOpen = false;
-            }
+            menuOpen = false;
         }
         previousRightMouseDown = rightMouseDown;
 
         if (mouseDown && !previousMouseDown) {
-            if (menuOpen) {
-                handleMenuClick(mouseX, mouseY);
-                previousMouseDown = mouseDown;
-                return;
-            }
             dragging = findElementAt(mouseX, mouseY, screenWidth, screenHeight);
             if (dragging != null) {
                 dragOffsetX = mouseX - dragging.centerX(screenWidth);
@@ -239,55 +221,6 @@ public final class HudManager {
         }
 
         previousMouseDown = mouseDown;
-    }
-
-    private static void openContextMenu(HudElement target, int screenWidth, int screenHeight) {
-        float width = target.width();
-        float height = target.height();
-        float cx = target.centerX(screenWidth);
-        float cy = target.centerY(screenHeight);
-        float menuHeight = MENU_PAD * 2.0f + MENU_ROW_H * 2.0f;
-        menuX = Math.max(2.0f, Math.min(screenWidth - MENU_W - 2.0f, cx - MENU_W * 0.5f));
-        menuY = cy - height * 0.5f - MENU_GAP - menuHeight;
-        if (menuY < 2.0f) {
-            menuY = cy + height * 0.5f + MENU_GAP;
-        }
-        menuOpen = true;
-    }
-
-    private static void handleMenuClick(float mouseX, float mouseY) {
-        float menuHeight = MENU_PAD * 2.0f + MENU_ROW_H * 2.0f;
-        boolean inside = mouseX >= menuX && mouseX <= menuX + MENU_W && mouseY >= menuY && mouseY <= menuY + menuHeight;
-        if (inside) {
-            int row = (int) ((mouseY - menuY - MENU_PAD) / MENU_ROW_H);
-            if (row == 0) {
-                PotionLayoutMode.set(PotionLayoutMode.Mode.BLOCK);
-            } else if (row == 1) {
-                PotionLayoutMode.set(PotionLayoutMode.Mode.SEPARATE);
-            }
-        }
-        menuOpen = false;
-    }
-
-    private static void renderContextMenu(DrawContext context) {
-        if (menuFont == null) {
-            menuFont = Fonts.titleFont();
-        }
-        float menuHeight = MENU_PAD * 2.0f + MENU_ROW_H * 2.0f;
-        RoundedRectPipeline.draw(context, menuX, menuY, MENU_W, menuHeight, ColorMath.withAlpha(0x121318, 245));
-        RoundedRectPipeline.drawOutline(context, menuX, menuY, MENU_W, menuHeight, ColorMath.withAlpha(0xFFFFFF, 55));
-
-        PotionLayoutMode.Mode current = PotionLayoutMode.get();
-        drawMenuRow(context, "Block", menuX, menuY + MENU_PAD, current == PotionLayoutMode.Mode.BLOCK);
-        drawMenuRow(context, "Separate", menuX, menuY + MENU_PAD + MENU_ROW_H, current == PotionLayoutMode.Mode.SEPARATE);
-    }
-
-    private static void drawMenuRow(DrawContext context, String label, float x, float y, boolean selected) {
-        if (selected) {
-            RoundedRectPipeline.draw(context, x + 3.0f, y + 1.0f, MENU_W - 6.0f, MENU_ROW_H - 2.0f, ColorMath.withAlpha(0xFFFFFF, 24));
-        }
-        MsdfText.draw(context, menuFont, label, x + 9.0f, y + MENU_ROW_H * 0.5f - 3.2f, 7.0f,
-            ColorMath.withAlpha(0xFFFFFF, selected ? 250 : 200));
     }
 
     private static HudElement findElementAt(float mouseX, float mouseY, int screenWidth, int screenHeight) {

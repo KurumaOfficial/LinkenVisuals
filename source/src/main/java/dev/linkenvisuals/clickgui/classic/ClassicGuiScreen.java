@@ -30,7 +30,7 @@ public class ClassicGuiScreen extends Screen {
     private float dragOffsetY = 0.0F;
 
     public ClassicGuiScreen() {
-        super(Text.literal("Linken Visuals"));
+        super(Text.literal("Strange Visuals"));
         GuiLocalization.initialize();
         this.appearStartNanos = System.nanoTime();
     }

@@ -34,6 +34,7 @@ public final class HitEffects {
     private static final Vector3f b = new Vector3f();
     private static final Vector3f c = new Vector3f();
     private static final Vector3f d = new Vector3f();
+    private static final CosmeticContext CONTEXT = new CosmeticContext();
 
     private static float clock;
     private static long lastFrame = System.nanoTime();
@@ -162,9 +163,10 @@ public final class HitEffects {
         for (int pass = 0; pass < 2; pass++) {
             boolean lit = pass == 1;
             VertexConsumer buffer = consumers.getBuffer(lit ? Material.LIGHT : Material.BODY);
-            CosmeticContext ctx = new CosmeticContext(buffer, lit ? CosmeticContext.LIGHT : CosmeticContext.SHEET,
+            CONTEXT.set(buffer, lit ? CosmeticContext.LIGHT : CosmeticContext.SHEET,
                 matrices.peek().getPositionMatrix(), client.player,
                 clock, 1.0f, colour, 0.0f, 0.0f, 1.0f);
+            CosmeticContext ctx = CONTEXT;
 
             for (int i = 0; i < POOL; i++) {
                 float age = (clock - born[i]) / life;
@@ -183,6 +185,10 @@ public final class HitEffects {
                     default -> impact(ctx, x, y, z, dirX[i], dirZ[i], age, size);
                 }
             }
+        }
+        if (consumers instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
+            immediate.draw(Material.BODY);
+            immediate.draw(Material.LIGHT);
         }
     }
 

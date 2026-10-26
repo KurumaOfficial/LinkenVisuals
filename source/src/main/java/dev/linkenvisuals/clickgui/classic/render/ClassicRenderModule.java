@@ -113,7 +113,7 @@ public final class ClassicRenderModule {
 
             // 3-dots indicator
             if (module.hasSettings()) {
-                float dotsX = modulesX + 185;
+                float dotsX = modulesX + 201;
                 int dotsColor = module.expanded() ? ColorUtil.getMainColor(1, 1) : ColorUtil.replAlpha(textCol, 180);
                 RenderUtil.Round.draw(ctx, dotsX, drawY + 8.0F, 3, 3, 1.5F, dotsColor);
                 RenderUtil.Round.draw(ctx, dotsX, drawY + 11.5F, 3, 3, 1.5F, dotsColor);
@@ -124,8 +124,8 @@ public final class ClassicRenderModule {
             if (module.hasSettings() && module.expanded()) {
                 float headerH = ClassicGuiState.MODULE_HEADER_HEIGHT;
                 RenderUtil.Rect.draw(ctx, modulesX + 6.0F, drawY + headerH, modulesWidth - 12.0F, 0.5F, ColorUtil.replAlpha(textCol, 30));
-                ClassicRenderSettings.renderSettings(ctx, module.leftSettings(), modulesX + 7, drawY + headerH + 2.0F, mouseX, mouseY);
-                ClassicRenderSettings.renderSettings(ctx, module.rightSettings(), modulesX + modulesWidth / 2.0F + 2.0F, drawY + headerH + 2.0F, mouseX, mouseY);
+                ClassicRenderSettings.renderSettings(ctx, module.leftSettings(), ClassicGuiState.x + 7.0F, drawY + headerH + 2.0F, mouseX, mouseY);
+                ClassicRenderSettings.renderSettings(ctx, module.rightSettings(), ClassicGuiState.x + 109.0F, drawY + headerH + 2.0F, mouseX, mouseY);
             }
 
             yDown += ClassicGuiState.MODULE_VERTICAL_SPACING + up;

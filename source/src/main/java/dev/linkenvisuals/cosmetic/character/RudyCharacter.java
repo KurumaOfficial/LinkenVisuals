@@ -106,13 +106,15 @@ public final class RudyCharacter {
         }
     }
 
+    private static final ThreadLocal<MatrixStack> LOCAL_MATRICES = ThreadLocal.withInitial(MatrixStack::new);
+
     private static void emit(PlayerEntityModel model, PlayerEntityRenderState state, RudyMesh.Part[] loaded,
                              int material, MatrixStack.Entry snapshot, VertexConsumer consumer,
                              int light, int overlay, int color) {
         // The draw lambda runs after other entities may have re-posed the shared model: re-apply
         // this state's pose so the attachment pivots match the meshes that are about to be drawn.
         model.setAngles(state);
-        MatrixStack local = new MatrixStack();
+        MatrixStack local = LOCAL_MATRICES.get();
         local.push();
         local.peek().copy(snapshot);
         for (RudyMesh.Part mesh : loaded) {

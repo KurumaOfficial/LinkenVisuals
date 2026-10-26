@@ -46,7 +46,7 @@ import java.util.List;
  * and snap-to-grid controls.
  */
 public final class MainMenuEditorScreen extends Screen {
-    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/logo.png");
+    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/strange_logo.png");
     private static final Identifier ICON_DATA = LinkenVisuals.id("fonts/msdf/wtmico.json");
     private static final Identifier ICON_ATLAS = LinkenVisuals.id("fonts/msdf/wtmico.png");
 
@@ -308,11 +308,11 @@ public final class MainMenuEditorScreen extends Screen {
                 context.getMatrices().translate(x + logoSize * 0.5f, y + logoSize * 0.5f);
                 context.drawTexture(RenderPipelines.GUI_TEXTURED, LOGO,
                     Math.round(-logoSize * 0.5f), Math.round(-logoSize * 0.5f), 0.0f, 0.0f,
-                    Math.round(logoSize), Math.round(logoSize), 120, 120, 120, 120, 0xFFFFFFFF);
+                    Math.round(logoSize), Math.round(logoSize), 128, 128, 128, 128, 0xFFFFFFFF);
                 context.getMatrices().popMatrix();
 
                 float textX = x + logoSize + 12.0f * scale;
-                spaced(context, "LINKEN", textX, y + 9.0f * scale, 11.0f * scale, 1.4f * scale, 0xFFFFFFFF);
+                spaced(context, "STRANGE", textX, y + 9.0f * scale, 11.0f * scale, 1.4f * scale, 0xFFFFFFFF);
                 spaced(context, "VISUALS", textX, y + 23.0f * scale, 11.0f * scale, 1.4f * scale, ColorMath.withAlpha(NeonEdge.cool(), 255));
             }
             case "SLOGAN" -> {

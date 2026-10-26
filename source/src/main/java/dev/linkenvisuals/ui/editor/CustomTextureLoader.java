@@ -38,7 +38,7 @@ public final class CustomTextureLoader {
     // Now the render thread only touches volatiles; a daemon loader decodes in
     // background and the render thread performs just the GPU upload (registerTexture).
     private static final ExecutorService LOADER = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "LinkenVisuals-CustomBG");
+        Thread t = new Thread(r, "VisualsModification-CustomBG");
         t.setDaemon(true);
         return t;
     });
@@ -62,7 +62,7 @@ public final class CustomTextureLoader {
                     }
                 });
             } catch (Exception e) {
-                LinkenVisuals.LOGGER.warn("[LinkenVisuals] Failed to list custom images: {}", e.getMessage());
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Failed to list custom images: {}", e.getMessage());
             }
         }
         return list;
@@ -110,7 +110,7 @@ public final class CustomTextureLoader {
                 cachedConfigPath = config.customImagePath == null ? "" : config.customImagePath;
             } catch (Exception e) {
                 closeImage(ready);
-                LinkenVisuals.LOGGER.warn("[LinkenVisuals] Custom background upload failed: {}", e.getMessage());
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Custom background upload failed: {}", e.getMessage());
                 return loaded && currentTexture != null ? CUSTOM_BG_ID : null;
             }
         }
@@ -151,7 +151,7 @@ public final class CustomTextureLoader {
             try {
                 currentModified = Files.getLastModifiedTime(imagePath).toMillis();
             } catch (Exception e) {
-                LinkenVisuals.LOGGER.warn("[LinkenVisuals] Failed to get modified time for '{}': {}", imagePath, e.getMessage());
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Failed to get modified time for '{}': {}", imagePath, e.getMessage());
                 return;
             }
             String currentPathStr = imagePath.toAbsolutePath().toString();
@@ -162,19 +162,19 @@ public final class CustomTextureLoader {
             try {
                 bytes = Files.readAllBytes(imagePath);
             } catch (Exception e) {
-                LinkenVisuals.LOGGER.warn("[LinkenVisuals] Custom background read failed: {}", e.getMessage());
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Custom background read failed: {}", e.getMessage());
                 return;
             }
             NativeImage image;
             try (InputStream in = new ByteArrayInputStream(bytes)) {
                 image = NativeImage.read(in);
             } catch (Exception e) {
-                LinkenVisuals.LOGGER.warn("[LinkenVisuals] Custom background decode failed: {}", e.getMessage());
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Custom background decode failed: {}", e.getMessage());
                 return;
             }
             long pixels = (long) image.getWidth() * image.getHeight();
             if (pixels > 4096L * 2048L) {
-                LinkenVisuals.LOGGER.warn("[LinkenVisuals] Custom background is {}x{} ({} MP), "
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Custom background is {}x{} ({} MP), "
                     + "consider downscaling to <=2048px to save VRAM.",
                     image.getWidth(), image.getHeight(), String.format(Locale.ROOT, "%.1f", pixels / 1_000_000.0));
             }
@@ -196,7 +196,7 @@ public final class CustomTextureLoader {
         try {
             image.close();
         } catch (Exception e) {
-            LinkenVisuals.LOGGER.debug("[LinkenVisuals] Background image close failed: {}", e.getMessage());
+            LinkenVisuals.LOGGER.debug("[Visuals Modification] Background image close failed: {}", e.getMessage());
         }
     }
 
@@ -207,7 +207,7 @@ public final class CustomTextureLoader {
         try {
             texture.close();
         } catch (Exception e) {
-            LinkenVisuals.LOGGER.debug("[LinkenVisuals] Background texture close failed: {}", e.getMessage());
+            LinkenVisuals.LOGGER.debug("[Visuals Modification] Background texture close failed: {}", e.getMessage());
         }
     }
 
@@ -235,7 +235,7 @@ public final class CustomTextureLoader {
                     return first.get();
                 }
             } catch (Exception e) {
-                LinkenVisuals.LOGGER.warn("[LinkenVisuals] Failed to scan custom image directory: {}", e.getMessage());
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Failed to scan custom image directory: {}", e.getMessage());
             }
         }
         // Fallback: linkenvisuals/background.png
@@ -256,7 +256,7 @@ public final class CustomTextureLoader {
         try {
             Files.createDirectories(dir);
         } catch (Exception e) {
-            LinkenVisuals.LOGGER.warn("[LinkenVisuals] Failed to create custom image directory: {}", e.getMessage());
+            LinkenVisuals.LOGGER.warn("[Visuals Modification] Failed to create custom image directory: {}", e.getMessage());
         }
         return dir;
     }

@@ -7,6 +7,7 @@ import dev.linkenvisuals.module.impl.CrosshairModule;
 import dev.linkenvisuals.module.impl.CustomHitBoxModule;
 import dev.linkenvisuals.module.impl.CustomVitalsModule;
 import dev.linkenvisuals.module.impl.DamageParticlesModule;
+import dev.linkenvisuals.module.impl.DeathCoordsModule;
 import dev.linkenvisuals.module.impl.ElytraSwapModule;
 import dev.linkenvisuals.module.impl.FortniteDamageModule;
 import dev.linkenvisuals.module.impl.FtHelperModule;
@@ -89,6 +90,7 @@ public final class Modules {
     private static ItemRadiusModule itemRadius;
     private static DamageParticlesModule damageParticles;
     private static FortniteDamageModule fortniteDamage;
+    private static DeathCoordsModule deathCoords;
     private static FtHelperModule ftHelper;
     private static HwHelperModule hwHelper;
     private static RwHelperModule rwHelper;
@@ -284,6 +286,10 @@ public final class Modules {
         return fortniteDamage;
     }
 
+    public static DeathCoordsModule deathCoords() {
+        return deathCoords;
+    }
+
     public static FtHelperModule ftHelper() {
         return ftHelper;
     }
@@ -378,6 +384,8 @@ public final class Modules {
         register(damageParticles);
         fortniteDamage = new FortniteDamageModule();
         register(fortniteDamage);
+        deathCoords = new DeathCoordsModule();
+        register(deathCoords);
         ftHelper = new FtHelperModule();
         register(ftHelper);
         hwHelper = new HwHelperModule();

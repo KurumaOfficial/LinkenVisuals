@@ -4,7 +4,8 @@
   "version": "${version}",
   "name": "LinkenVisuals",
   "description": "High-performance visual enhancement client mod for Minecraft Fabric 1.21.11.",
-  "authors": ["LinkenVisuals"],
+  "authors": ["method", "LinkenVisuals"],
+  "icon": "assets/linkenvisuals/logo.png",
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
