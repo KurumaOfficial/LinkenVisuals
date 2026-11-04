@@ -40,9 +40,13 @@ public abstract class LinkenHubScreen extends Screen {
     private final Map<Integer, Spring> hover = new HashMap<>();
     private final Spring openSpring = new Spring(0.0, 900.0, 42.0);
     private final Spring closeSpring = new Spring(0.0, 900.0, 50.0);
+    private final Spring backSpring = new Spring(0.0, 900.0, 50.0);
+    private final Spring doneSpring = new Spring(0.0, 900.0, 50.0);
     private long lastFrame = System.nanoTime();
     private boolean openSoundPlayed;
     private LinkenMenuLayout.Rect closeRect;
+    private LinkenMenuLayout.Rect backRect;
+    private LinkenMenuLayout.Rect doneRect;
 
     protected LinkenHubScreen(Screen returnScreen, String heading, String subheading) {
         super(Text.empty());
@@ -65,6 +69,9 @@ public abstract class LinkenHubScreen extends Screen {
         hover.clear();
         buildEntries(entries);
         openSpring.reset(0.0);
+        closeSpring.reset(0.0);
+        backSpring.reset(0.0);
+        doneSpring.reset(0.0);
         openSoundPlayed = false;
         lastFrame = System.nanoTime();
     }
@@ -75,9 +82,34 @@ public abstract class LinkenHubScreen extends Screen {
     }
 
     @Override
+    public boolean shouldCloseOnEsc() {
+        return true;
+    }
+
+    @Override
     public void close() {
         if (client != null) {
-            client.setScreen(returnScreen);
+            Screen target = returnScreen;
+            while (target == this || target instanceof LinkenSettingsScreen
+                    || target instanceof net.minecraft.client.gui.screen.option.OptionsScreen) {
+                if (target instanceof LinkenHubScreen hub && hub.returnScreen() != target) {
+                    target = hub.returnScreen();
+                } else if (target instanceof net.minecraft.client.gui.screen.option.OptionsScreen opt) {
+                    try {
+                        target = ((dev.linkenvisuals.mixin.OptionsScreenAccessor) opt).linkenvisuals$getParent();
+                    } catch (Throwable t) {
+                        target = null;
+                    }
+                } else {
+                    target = null;
+                    break;
+                }
+            }
+            if (target == null || target instanceof LinkenSettingsScreen
+                    || target instanceof net.minecraft.client.gui.screen.option.OptionsScreen) {
+                target = client.world != null ? new LinkenPauseScreen() : new LinkenMainMenuScreen();
+            }
+            client.setScreen(target);
         }
     }
 
@@ -109,9 +141,10 @@ public abstract class LinkenHubScreen extends Screen {
             context.getMatrices().popMatrix();
         }
 
+        float slideY = (1.0f - fade) * 20.0f;
         context.getMatrices().pushMatrix();
         context.getMatrices().scale(metrics.scale(), metrics.scale());
-        context.getMatrices().translate(0.0f, (1.0f - fade) * 20.0f);
+        context.getMatrices().translate(0.0f, slideY);
         LinkenMenuChrome.drawWordmark(context, fade);
         LinkenMenuChrome.drawClock(context, metrics, fade);
         GlowPipeline.radial(context, metrics.width() * 0.5f, 540.0f, 640.0f,
@@ -130,6 +163,7 @@ public abstract class LinkenHubScreen extends Screen {
             + rows * 90.0f - 14.0f + 44.0f;
         float panelX = (metrics.width() - panelWidth) * 0.5f;
         float panelY = (metrics.height() - panelHeight) * 0.5f;
+        float contentMy = my - slideY;
 
         LinkenMenuChrome.roundedFill(context, panelX, panelY, panelWidth, panelHeight, 14.0f,
             LinkenMenuChrome.rgba(0x0E1411, 242, fade), metrics.scale());
@@ -147,7 +181,7 @@ public abstract class LinkenHubScreen extends Screen {
             LinkenMenuChrome.rgba(0xFFFFFF, 20, fade));
 
         closeRect = new LinkenMenuLayout.Rect(panelX + panelWidth - 38.0f - 40.0f, panelY + 28.0f, 40.0f, 40.0f);
-        boolean closeOver = closeRect.contains(mx, my);
+        boolean closeOver = closeRect.contains(mx, contentMy, 4.0f) || closeRect.contains(mx, my, 4.0f);
         closeSpring.step(closeOver ? 1.0 : 0.0, deltaSeconds);
         LinkenMenuChrome.drawSecondary(context, closeRect.x(), closeRect.y(), closeRect.width(), closeRect.height(),
             8.0f, (float) closeSpring.get(), false, fade, metrics.scale());
@@ -174,15 +208,39 @@ public abstract class LinkenHubScreen extends Screen {
                 gridIndex++;
             }
             entryRects.add(rect);
-            drawEntry(context, metrics, entry, rect, mx, my, fade, deltaSeconds, i);
+            drawEntry(context, metrics, entry, rect, mx, contentMy, fade, deltaSeconds, i);
         }
 
+        backRect = new LinkenMenuLayout.Rect(panelX + pad - 6.0f, panelY + panelHeight - 38.0f, 130.0f, 26.0f);
+        boolean backOver = backRect.contains(mx, contentMy, 4.0f) || backRect.contains(mx, my, 4.0f);
+        backSpring.step(backOver ? 1.0 : 0.0, deltaSeconds);
+        float backHover = (float) backSpring.get();
+        if (backHover > 0.01f) {
+            LinkenMenuChrome.roundedFill(context, backRect.x(), backRect.y(), backRect.width(), backRect.height(),
+                6.0f, LinkenMenuChrome.rgba(0xFFFFFF, Math.round(22 * backHover * fade)), metrics.scale());
+            LinkenMenuChrome.roundedOutline(context, backRect.x(), backRect.y(), backRect.width(), backRect.height(),
+                6.0f, 1.0f, LinkenMenuChrome.rgba(0xFFFFFF, Math.round(50 * backHover * fade)), metrics.scale());
+        }
+        int backTextColor = LinkenMenuChrome.mix(LinkenMenuChrome.MUTED4, LinkenMenuChrome.TEXT, backHover);
         LinkenMenuChrome.drawSpaced(context, LinkenFonts.headingLight(), "ESC  /  BACK",
             panelX + pad, panelY + panelHeight - 30.0f, 7.5f, 1.4f,
-            LinkenMenuChrome.rgba(LinkenMenuChrome.MUTED4, fade));
-        LinkenMenuChrome.drawRightText(context, LinkenFonts.mono(), "LINKEN",
-            panelX + panelWidth - pad, panelY + panelHeight - 30.0f, 8.5f,
-            LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, 128, fade));
+            LinkenMenuChrome.rgba(backTextColor, fade));
+
+        float doneW = 100.0f;
+        float doneH = 26.0f;
+        doneRect = new LinkenMenuLayout.Rect(panelX + panelWidth - pad - doneW, panelY + panelHeight - 38.0f, doneW, doneH);
+        boolean doneOver = doneRect.contains(mx, contentMy, 4.0f) || doneRect.contains(mx, my, 4.0f);
+        doneSpring.step(doneOver ? 1.0 : 0.0, deltaSeconds);
+        float doneHover = (float) doneSpring.get();
+        int doneBg = LinkenMenuChrome.mix(LinkenMenuChrome.ACCENT, 0xFFFFFF, doneHover * 0.15f);
+        LinkenMenuChrome.roundedFill(context, doneRect.x(), doneRect.y() - doneHover, doneRect.width(), doneRect.height(),
+            6.0f, LinkenMenuChrome.rgba(doneBg, Math.round(230 * fade)), metrics.scale());
+        LinkenMenuChrome.roundedOutline(context, doneRect.x(), doneRect.y() - doneHover, doneRect.width(), doneRect.height(),
+            6.0f, 1.0f, LinkenMenuChrome.rgba(0xFFFFFF, Math.round(60 * fade)), metrics.scale());
+        LinkenMenuChrome.drawCentered(context, LinkenFonts.headingLight(), "ГОТОВО",
+            doneRect.x() + doneW * 0.5f, doneRect.y() + 17.0f - doneHover, 10.0f,
+            LinkenMenuChrome.rgba(LinkenMenuChrome.INK, fade));
+        WindowMaterial.corners(context, panelX, panelY, panelWidth, panelHeight, metrics.scale(), fade);
         context.getMatrices().popMatrix();
     }
 
@@ -253,13 +311,27 @@ public abstract class LinkenHubScreen extends Screen {
         LinkenMenuLayout.Metrics metrics = LinkenMenuLayout.compute(width, height);
         float mx = (float) click.x() / metrics.scale();
         float my = (float) click.y() / metrics.scale();
-        if (closeRect != null && closeRect.contains(mx, my)) {
+        float slideY = (1.0f - (float) openSpring.get()) * 20.0f;
+        float contentMy = my - slideY;
+
+        if (closeRect != null && (closeRect.contains(mx, contentMy, 8.0f) || closeRect.contains(mx, my, 8.0f))) {
+            playClick();
+            close();
+            return true;
+        }
+        if (backRect != null && (backRect.contains(mx, contentMy, 6.0f) || backRect.contains(mx, my, 6.0f))) {
+            playClick();
+            close();
+            return true;
+        }
+        if (doneRect != null && (doneRect.contains(mx, contentMy, 6.0f) || doneRect.contains(mx, my, 6.0f))) {
             playClick();
             close();
             return true;
         }
         for (int i = 0; i < entryRects.size() && i < entries.size(); i++) {
-            if (entryRects.get(i).contains(mx, my)) {
+            LinkenMenuLayout.Rect rect = entryRects.get(i);
+            if (rect.contains(mx, contentMy) || rect.contains(mx, my)) {
                 playClick();
                 entries.get(i).action().run();
                 return true;
@@ -270,7 +342,8 @@ public abstract class LinkenHubScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyInput input) {
-        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+        if (input.key() == GLFW.GLFW_KEY_ESCAPE || input.isEscape()) {
+            playClick();
             close();
             return true;
         }

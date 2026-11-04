@@ -72,6 +72,10 @@ public final class CooldownTracker {
         return entries;
     }
 
+    public static List<Entry> activeCooldowns(MinecraftClient client) {
+        return collect(client, 0.0f);
+    }
+
     public static List<Entry> preview() {
         return List.of(
             sample(Items.ENDER_PEARL, 16 * 20, 0.85f),

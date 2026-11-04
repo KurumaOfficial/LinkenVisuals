@@ -18,11 +18,8 @@ import net.minecraft.client.gui.DrawContext;
  */
 public final class HudStyle {
     public enum Variant {
-        CARD, MINIMAL, NEON, AURORA, GLASS, SOLID, GRADIENT, OUTLINE, LEGACY
+        CARD, MINIMAL, NEON, AURORA, GLASS, SOLID, GRADIENT, OUTLINE
     }
-
-    /** StrangeVisuals-era body colour (pre-donor HudSurface). */
-    private static final int LEGACY_BODY = 0x0E0F14;
 
     public enum Shape {
         ROUNDED, PILL, SHARP
@@ -32,11 +29,9 @@ public final class HudStyle {
     }
 
     public static Variant variant() {
-        if (StyleFlavor.isStrange()) {
-            return Variant.LEGACY;
-        }
         String value = ModuleRegistry.hudStyle() == null ? "Card" : ModuleRegistry.hudStyle().value();
         return switch (value == null ? "" : value.toLowerCase(java.util.Locale.ROOT)) {
+            case "linken", "card" -> Variant.CARD;
             case "minimal" -> Variant.MINIMAL;
             case "neon" -> Variant.NEON;
             case "aurora" -> Variant.AURORA;
@@ -49,9 +44,6 @@ public final class HudStyle {
     }
 
     public static Shape shape() {
-        if (StyleFlavor.isStrange()) {
-            return Shape.ROUNDED;
-        }
         String value = ModuleRegistry.hudShape() == null ? "Rounded" : ModuleRegistry.hudShape().value();
         return switch (value == null ? "" : value.toLowerCase(java.util.Locale.ROOT)) {
             case "pill" -> Shape.PILL;
@@ -84,13 +76,6 @@ public final class HudStyle {
         int base = base();
         int accent = accent(element);
         switch (variant()) {
-            case LEGACY -> {
-                GlassPanelPipeline.draw(context, x, y, width, height,
-                    ColorMath.withAlpha(Theme.hudTint(element), Math.round(225.0f * a)));
-                RoundedRectPipeline.draw(context, x, y, width, height,
-                    ColorMath.withAlpha(LEGACY_BODY, Math.round(206.0f * a)));
-                NeonEdge.frame(context, x, y, width, height, 0, a);
-            }
             case CARD -> {
                 RoundedRectPipeline.drawBorder(context, x - 6.0f, y - 6.0f + 1.5f,
                     width + 12.0f, height + 12.0f, radius + 6.0f, 0.0f, 1.5f, 6.0f,
@@ -223,15 +208,6 @@ public final class HudStyle {
         float radius = radius(width, height);
         int accent = accent(element);
         Variant variant = variant();
-        if (variant == Variant.LEGACY) {
-            GlassPanelPipeline.draw(context, x, y, width, height,
-                ColorMath.withAlpha(Theme.hudTint(element), Math.round(215.0f * a)));
-            RoundedRectPipeline.draw(context, x, y, width, height,
-                ColorMath.withAlpha(LEGACY_BODY, Math.round(200.0f * a)));
-            RoundedRectPipeline.drawOutline(context, x, y, width, height,
-                ColorMath.withAlpha(0xFFFFFF, Math.round(20.0f * a)));
-            return;
-        }
         RoundedRectPipeline.draw(context, x, y, width, height, radius,
             inset(Math.round(205.0f * a)));
         if (variant == Variant.OUTLINE || variant == Variant.GRADIENT) {
@@ -263,9 +239,6 @@ public final class HudStyle {
 
     /** Donor {@code themeInset(alpha, mix)} used by item cells and tinted plates. */
     public static int inset(int alpha, float mix) {
-        if (StyleFlavor.isStrange()) {
-            return ColorMath.withAlpha(LEGACY_BODY, alpha);
-        }
         int mixed = ColorMath.mix(base(), LinkGuiTheme.isLight() ? 0x000000 : 0xFFFFFF, mix);
         return ColorMath.withAlpha(mixed, alpha);
     }

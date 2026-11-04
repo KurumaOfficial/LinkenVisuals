@@ -55,7 +55,7 @@ public final class ScreenCapture {
             try {
                 buffer.delete();
             } catch (Throwable t) {
-                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Screen-capture release failed: {}", t.getMessage());
+                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Screen-capture release failed: {}", t.getMessage());
             }
             buffer = null;
         }

@@ -94,6 +94,10 @@ public final class ClassicGuiMouseHandler {
 
             // Module header clicked
             if (headerVisible && ClassicGuiState.isHovered(mouseX, mouseY, modulesX, drawY, modulesWidth, headerH)) {
+                if (module.hasSettings() && ClassicGuiState.isHovered(mouseX, mouseY, modulesX + 195.0F, drawY + 4.0F, 16.0F, 18.0F)) {
+                    module.toggleExpanded();
+                    return true;
+                }
                 if (button == 0) {
                     module.toggle();
                     return true;
@@ -109,10 +113,10 @@ public final class ClassicGuiMouseHandler {
             // Expanded settings clicked
             if (module.hasSettings() && module.expanded() && blockVisible) {
                 float settingsTop = drawY + headerH + 2.0F;
-                if (handleSettingsClick(module.leftSettings(), mouseX, mouseY, modulesX + 7, settingsTop, clipTop, clipBottom)) {
+                if (handleSettingsClick(module.leftSettings(), mouseX, mouseY, ClassicGuiState.x + 7.0F, settingsTop, clipTop, clipBottom)) {
                     return true;
                 }
-                if (handleSettingsClick(module.rightSettings(), mouseX, mouseY, modulesX + modulesWidth / 2.0F + 2.0F, settingsTop, clipTop, clipBottom)) {
+                if (handleSettingsClick(module.rightSettings(), mouseX, mouseY, ClassicGuiState.x + 109.0F, settingsTop, clipTop, clipBottom)) {
                     return true;
                 }
             }
@@ -131,7 +135,13 @@ public final class ClassicGuiMouseHandler {
             float xSettings = x;
             float ySettings = y + up;
 
-            if (setting instanceof BooleanSetting bool) {
+            if (setting instanceof dev.linkenvisuals.clickgui.setting.ActionSetting action) {
+                if (isHoveredClipped(mouseX, mouseY, xSettings + 5, ySettings + 4, 94, 14, clipTop, clipBottom)) {
+                    action.run();
+                    return true;
+                }
+                up += 20.0F;
+            } else if (setting instanceof BooleanSetting bool) {
                 if (isHoveredClipped(mouseX, mouseY, xSettings + 88, ySettings + 4, 10, 10, clipTop, clipBottom)) {
                     bool.toggle();
                     return true;

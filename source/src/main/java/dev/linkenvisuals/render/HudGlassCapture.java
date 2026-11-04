@@ -82,7 +82,7 @@ public final class HudGlassCapture {
                     fb.delete();
                     released = true;
                 } catch (Throwable t) {
-                    dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] HUD-glass release failed: {}", t.getMessage());
+                    dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] HUD-glass release failed: {}", t.getMessage());
                 }
             }
         }
@@ -90,7 +90,7 @@ public final class HudGlassCapture {
         quarter = null;
         eighth = null;
         if (released) {
-            dev.linkenvisuals.LinkenVisuals.LOGGER.debug("[LinkenVisuals] HUD-glass capture buffers released");
+            dev.linkenvisuals.LinkenVisuals.LOGGER.debug("[Visuals Modification] HUD-glass capture buffers released");
         }
     }
 

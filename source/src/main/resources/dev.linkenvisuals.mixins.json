@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.linkenvisuals.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "FogRendererAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

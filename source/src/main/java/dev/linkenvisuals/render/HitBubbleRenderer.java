@@ -152,7 +152,7 @@ public final class HitBubbleRenderer {
             try {
                 scene.delete();
             } catch (Throwable t) {
-                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Hit-bubble buffer release failed: {}", t.getMessage());
+                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Hit-bubble buffer release failed: {}", t.getMessage());
             }
             scene = null;
         }

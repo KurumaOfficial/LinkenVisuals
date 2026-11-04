@@ -42,12 +42,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 100% Custom Main Menu Screen for LinkenVisuals.
+ * 100% Custom Main Menu Screen for visuals modification.
  * Restores original AAA high-end typography, animations, watermark, and branding,
  * with 1:1 editor synchronicity and guaranteed responsive screen transitions.
  */
 public final class MainMenuScreen extends Screen {
-    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/strange_logo.png");
+    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/linken_logo.png");
     private static final Identifier ICON_DATA = LinkenVisuals.id("fonts/msdf/wtmico.json");
     private static final Identifier ICON_ATLAS = LinkenVisuals.id("fonts/msdf/wtmico.png");
     private static final Identifier BRAND_DATA = LinkenVisuals.id("fonts/msdf/brands.json");
@@ -255,7 +255,7 @@ public final class MainMenuScreen extends Screen {
         context.getMatrices().translate(cx, cy);
         context.getMatrices().scale(size / 120.0f, size / 120.0f);
         context.drawTexture(RenderPipelines.GUI_TEXTURED, LOGO, -60, -60, 0.0f, 0.0f,
-            120, 120, 120, 120, ColorMath.withAlpha(0xFFFFFF, Math.round(16 * appear)));
+            120, 120, 128, 128, 128, 128, ColorMath.withAlpha(0xFFFFFF, Math.round(16 * appear)));
         context.getMatrices().popMatrix();
     }
 
@@ -522,7 +522,7 @@ public final class MainMenuScreen extends Screen {
 
         if (distance(click.x(), click.y(), discordX, iconY) <= iconRadius) {
             playClick();
-            Util.getOperatingSystem().open("https://discord.gg/linkenvisuals");
+            Util.getOperatingSystem().open("https://dsc.gg/linkenvisuals");
             return true;
         }
         if (distance(click.x(), click.y(), telegramX, iconY) <= iconRadius) {
@@ -568,7 +568,7 @@ public final class MainMenuScreen extends Screen {
 
     private void openSingleplayer() {
         requestTransition(() -> {
-            if (client != null) client.setScreen(new SelectWorldScreen(this));
+            if (client != null) client.setScreen(new ru.method.linkenvisuals.screen.world.CustomSingleplayerScreen(this));
         });
     }
 

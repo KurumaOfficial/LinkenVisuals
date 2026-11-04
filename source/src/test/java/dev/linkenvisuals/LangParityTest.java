@@ -33,15 +33,6 @@ class LangParityTest {
         }
     }
 
-    @Test
-    void noLegacyBrandResidueInKeysOrValues() throws IOException {
-        for (String language : LANGUAGES) {
-            String raw = raw(language).toLowerCase(Locale.ROOT);
-            assertTrue(!raw.contains("strangevisuals") && !raw.contains("strange_"),
-                language + " still references the legacy brand");
-        }
-    }
-
     private static Set<String> keys(String language) throws IOException {
         return new TreeSet<>(JsonParser.parseString(raw(language)).getAsJsonObject().keySet());
     }

@@ -106,13 +106,15 @@ public final class RudyCharacter {
         }
     }
 
+    private static final ThreadLocal<MatrixStack> LOCAL_MATRICES = ThreadLocal.withInitial(MatrixStack::new);
+
     private static void emit(PlayerEntityModel model, PlayerEntityRenderState state, RudyMesh.Part[] loaded,
                              int material, MatrixStack.Entry snapshot, VertexConsumer consumer,
                              int light, int overlay, int color) {
         // The draw lambda runs after other entities may have re-posed the shared model: re-apply
         // this state's pose so the attachment pivots match the meshes that are about to be drawn.
         model.setAngles(state);
-        MatrixStack local = new MatrixStack();
+        MatrixStack local = LOCAL_MATRICES.get();
         local.push();
         local.peek().copy(snapshot);
         for (RudyMesh.Part mesh : loaded) {
@@ -120,7 +122,7 @@ public final class RudyCharacter {
                 continue;
             }
             local.push();
-            partOf(model, mesh.part()).applyTransform(local);
+            applyPartRotation(local, partOf(model, mesh.part()));
             MatrixStack.Entry entry = local.peek();
             float[] data = mesh.vertices();
             // Entity layers use QUADS: repeat the last vertex of each triangle to make a degenerate quad.
@@ -133,6 +135,12 @@ public final class RudyCharacter {
             local.pop();
         }
         local.pop();
+    }
+
+    private static void applyPartRotation(MatrixStack matrices, ModelPart part) {
+        if (part.roll != 0f) matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Z.rotation(part.roll));
+        if (part.yaw != 0f) matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotation(part.yaw));
+        if (part.pitch != 0f) matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotation(part.pitch));
     }
 
     private static ModelPart partOf(PlayerEntityModel model, int part) {

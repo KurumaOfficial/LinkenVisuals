@@ -19,8 +19,6 @@ import java.util.List;
  * SimpleOption immediately; this screen only owns layout and interaction.
  */
 public final class LinkenSubSettingsScreen extends Screen {
-    private static final float WINDOW_X = 430.0f;
-    private static final float WINDOW_Y = 238.0f;
     private static final float WINDOW_W = 1060.0f;
     private static final float TOPBAR_H = 70.0f;
     private static final float FOOTER_H = 64.0f;
@@ -28,6 +26,9 @@ public final class LinkenSubSettingsScreen extends Screen {
     private static final float ROW_GAP = 8.0f;
     private static final float PAD = 20.0f;
     private static final float COL_GAP = 14.0f;
+
+    private float winX;
+    private float winY;
 
     private final Screen parent;
     private final String crumb;
@@ -82,11 +83,11 @@ public final class LinkenSubSettingsScreen extends Screen {
     private float windowHeight() {
         int rows = Math.max(1, (filtered.size() + 1) / 2);
         float content = PAD * 2.0f + rows * ROW_H + Math.max(0, rows - 1) * ROW_GAP;
-        return Math.min(TOPBAR_H + content + FOOTER_H, 1006.0f - WINDOW_Y);
+        return Math.min(TOPBAR_H + content + FOOTER_H, 840.0f);
     }
 
     private float listTop() {
-        return WINDOW_Y + TOPBAR_H;
+        return winY + TOPBAR_H;
     }
 
     private float listHeight() {
@@ -112,6 +113,8 @@ public final class LinkenSubSettingsScreen extends Screen {
         float fade = (float) openSpring.get();
 
         LinkenMenuLayout.Metrics metrics = LinkenMenuLayout.compute(width, height);
+        winX = (metrics.width() - WINDOW_W) * 0.5f;
+        winY = Math.max(80.0f, (metrics.height() - windowHeight()) * 0.5f);
         float mx = mouseX / metrics.scale();
         float my = mouseY / metrics.scale();
 
@@ -127,14 +130,14 @@ public final class LinkenSubSettingsScreen extends Screen {
 
         backRect = new LinkenMenuLayout.Rect(metrics.width() - LinkenMenuLayout.MARGIN - 132.0f,
             104.0f, 132.0f, 44.0f);
-        drawChip(context, metrics, backRect, "BACK", LinkenMenuChrome.ICON_POWER, mx, my, fade, backSpring, seconds);
+        drawChip(context, metrics, backRect, "Назад", LinkenMenuChrome.ICON_POWER, mx, my, fade, backSpring, seconds);
 
-        LinkenMenuChrome.drawSpaced(context, LinkenFonts.headingLight(), "SETTINGS",
+        LinkenMenuChrome.drawSpaced(context, LinkenFonts.headingLight(), "НАСТРОЙКИ",
             LinkenMenuLayout.MARGIN, 146.0f, 8.5f, 1.6f,
             LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, fade));
-        LinkenMenuChrome.drawText(context, LinkenFonts.headingLight(), crumb.toUpperCase(),
+        LinkenMenuChrome.drawText(context, LinkenFonts.headingLight(), crumb,
             LinkenMenuLayout.MARGIN, 162.0f, 40.0f, LinkenMenuChrome.rgba(LinkenMenuChrome.TEXT, fade));
-        String count = filtered.size() == 1 ? "1 OPTION" : filtered.size() + " OPTIONS";
+        String count = filtered.size() + " параметров";
         LinkenMenuChrome.drawText(context, LinkenFonts.body(), count,
             LinkenMenuLayout.MARGIN, 218.0f, 11.0f, LinkenMenuChrome.rgba(LinkenMenuChrome.MUTED2, fade));
 
@@ -145,16 +148,16 @@ public final class LinkenSubSettingsScreen extends Screen {
     private void drawWindow(DrawContext context, LinkenMenuLayout.Metrics metrics, float mx, float my,
                             float fade, float seconds) {
         float height = windowHeight();
-        LinkenMenuChrome.roundedFill(context, WINDOW_X, WINDOW_Y, WINDOW_W, height, 14.0f,
+        LinkenMenuChrome.roundedFill(context, winX, winY, WINDOW_W, height, 14.0f,
             LinkenMenuChrome.rgba(0x0E1411, 250, fade), metrics.scale());
-        LinkenMenuChrome.roundedOutline(context, WINDOW_X, WINDOW_Y, WINDOW_W, height, 14.0f, 1.0f,
+        LinkenMenuChrome.roundedOutline(context, winX, winY, WINDOW_W, height, 14.0f, 1.0f,
             LinkenMenuChrome.rgba(0xFFFFFF, 28, fade), metrics.scale());
 
-        LinkenMenuChrome.drawText(context, LinkenFonts.headingLight(), "SETTINGS  /  " + crumb.toUpperCase(),
-            WINDOW_X + 24.0f, WINDOW_Y + 26.0f, 14.0f,
+        LinkenMenuChrome.drawText(context, LinkenFonts.headingLight(), "Настройки  /  " + crumb,
+            winX + 24.0f, winY + 26.0f, 14.0f,
             LinkenMenuChrome.rgba(LinkenMenuChrome.TEXT2, fade));
 
-        searchRect = new LinkenMenuLayout.Rect(WINDOW_X + WINDOW_W - 334.0f, WINDOW_Y + 18.0f, 310.0f, 38.0f);
+        searchRect = new LinkenMenuLayout.Rect(winX + WINDOW_W - 334.0f, winY + 18.0f, 310.0f, 38.0f);
         drawSearch(context, metrics, mx, my, fade);
 
         scrollTarget = clampScroll(scrollTarget);
@@ -171,14 +174,14 @@ public final class LinkenSubSettingsScreen extends Screen {
         rowOptions.clear();
 
         if (filtered.isEmpty()) {
-            LinkenMenuChrome.drawCentered(context, LinkenFonts.headingLight(), "NO OPTIONS MATCH THIS SEARCH",
-                WINDOW_X + WINDOW_W * 0.5f, top + available * 0.5f, 15.0f,
+            LinkenMenuChrome.drawCentered(context, LinkenFonts.headingLight(), "Параметры не найдены",
+                winX + WINDOW_W * 0.5f, top + available * 0.5f, 15.0f,
                 LinkenMenuChrome.rgba(LinkenMenuChrome.TEXT3, fade));
         } else {
             for (int i = 0; i < filtered.size(); i++) {
                 int column = i % 2;
                 int row = i / 2;
-                float x = WINDOW_X + PAD + column * (colW + COL_GAP);
+                float x = winX + PAD + column * (colW + COL_GAP);
                 float y = top + PAD + row * (ROW_H + ROW_GAP) - scroll;
                 if (y + ROW_H < top || y > top + available) {
                     continue;
@@ -194,17 +197,19 @@ public final class LinkenSubSettingsScreen extends Screen {
             }
         }
 
-        float footerY = WINDOW_Y + height - FOOTER_H;
-        context.fill(Math.round(WINDOW_X + 1.0f), Math.round(footerY),
-            Math.round(WINDOW_X + WINDOW_W - 1.0f), Math.round(WINDOW_Y + height - 1.0f),
+        float footerY = winY + height - FOOTER_H;
+        context.fill(Math.round(winX + 1.0f), Math.round(footerY),
+            Math.round(winX + WINDOW_W - 1.0f), Math.round(winY + height - 1.0f),
             LinkenMenuChrome.rgba(0x0E1411, 250, fade));
 
-        doneRect = new LinkenMenuLayout.Rect(WINDOW_X + WINDOW_W - PAD - 130.0f,
-            WINDOW_Y + height - 54.0f, 130.0f, 40.0f);
+        doneRect = new LinkenMenuLayout.Rect(winX + WINDOW_W - PAD - 130.0f,
+            winY + height - 54.0f, 130.0f, 40.0f);
         drawDoneButton(context, metrics, doneRect, mx, my, fade, seconds);
-        LinkenMenuChrome.drawText(context, LinkenFonts.body(), "ESC  /  BACK",
-            WINDOW_X + PAD, WINDOW_Y + height - 40.0f, 9.0f,
+        LinkenMenuChrome.drawText(context, LinkenFonts.body(), "ESC  /  Назад",
+            winX + PAD, winY + height - 40.0f, 9.0f,
             LinkenMenuChrome.rgba(LinkenMenuChrome.MUTED3, fade));
+
+        WindowMaterial.corners(context, winX, winY, WINDOW_W, height, metrics.scale(), fade);
     }
 
     private void drawSearch(DrawContext context, LinkenMenuLayout.Metrics metrics, float mx, float my, float fade) {
@@ -438,7 +443,7 @@ public final class LinkenSubSettingsScreen extends Screen {
         LinkenMenuLayout.Metrics metrics = LinkenMenuLayout.compute(width, height);
         float mx = (float) mouseX / metrics.scale();
         float my = (float) mouseY / metrics.scale();
-        if (mx >= WINDOW_X && mx <= WINDOW_X + WINDOW_W
+        if (mx >= winX && mx <= winX + WINDOW_W
             && my >= listTop() && my <= listTop() + listHeight()) {
             scrollTarget = clampScroll(scrollTarget - (float) verticalAmount * 54.0f);
             return true;
@@ -449,7 +454,11 @@ public final class LinkenSubSettingsScreen extends Screen {
     @Override
     public void close() {
         if (client != null) {
-            client.setScreen(parent);
+            Screen target = parent;
+            if (target == null || target == this) {
+                target = client.world != null ? new LinkenPauseScreen() : new LinkenMainMenuScreen();
+            }
+            client.setScreen(target);
         }
     }
 }

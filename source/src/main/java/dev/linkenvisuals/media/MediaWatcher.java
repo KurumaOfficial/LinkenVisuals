@@ -41,7 +41,7 @@ public final class MediaWatcher {
         $mgrType = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType=WindowsRuntime]
         $mgr = Await ($mgrType::RequestAsync()) ($mgrType)
         $propType = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties, Windows.Media.Control, ContentType=WindowsRuntime]
-        while ($true) { $best = ''; $bestScore = -1000; try { $sessions = $mgr.GetSessions(); foreach ($s in $sessions) { $props = Await ($s.TryGetMediaPropertiesAsync()) ($propType); if ($null -eq $props) { continue }; $title = ("" + $props.Title).Trim(); $artist = ("" + $props.Artist).Trim(); if ([string]::IsNullOrWhiteSpace($artist)) { $artist = ("" + $props.AlbumArtist).Trim() }; if ([string]::IsNullOrWhiteSpace($title) -and [string]::IsNullOrWhiteSpace($artist)) { continue }; $info = $s.GetPlaybackInfo(); $playing = '0'; if ("$($info.PlaybackStatus)" -eq 'Playing') { $playing = '1' }; $pos = 0; $len = 0; try { $tl = $s.GetTimelineProperties(); $pos = [math]::Round($tl.Position.TotalMilliseconds); $len = [math]::Round($tl.EndTime.TotalMilliseconds) } catch { }; $app = "" + $s.SourceAppUserModelId; $line = "$title`t$artist`t$app`t$playing`t$pos`t$len"; $score = 0; if ($playing -eq '1') { $score += 50 }; if ("$($props.PlaybackType)" -eq 'Music') { $score += 20 }; $id = $app.ToLower(); if ($id -match 'spotify|soundcloud|yandex|music|deezer|tidal|aimp|foobar|winamp|apple') { $score += 100 } elseif ($id -match 'chrome|edge|firefox|opera|brave') { $score += 10 }; if ($score -gt $bestScore) { $bestScore = $score; $best = $line } } } catch { }; Write-Output $best; [Console]::Out.Flush(); Start-Sleep -Milliseconds 1500 }
+        while ($true) { $best = ''; $bestScore = -1000; try { if ($null -ne $mgr) { $sessions = $mgr.GetSessions(); foreach ($s in $sessions) { $props = Await ($s.TryGetMediaPropertiesAsync()) ($propType); if ($null -eq $props) { continue }; $title = ("" + $props.Title).Trim(); $artist = ("" + $props.Artist).Trim(); if ([string]::IsNullOrWhiteSpace($artist)) { $artist = ("" + $props.AlbumArtist).Trim() }; if ([string]::IsNullOrWhiteSpace($title) -and [string]::IsNullOrWhiteSpace($artist)) { continue }; $info = $s.GetPlaybackInfo(); $playing = '0'; if ("$($info.PlaybackStatus)" -eq 'Playing') { $playing = '1' }; $pos = 0; $len = 0; try { $tl = $s.GetTimelineProperties(); $pos = [math]::Round($tl.Position.TotalMilliseconds); $len = [math]::Round($tl.EndTime.TotalMilliseconds) } catch { }; $app = "" + $s.SourceAppUserModelId; $line = "$title`t$artist`t$app`t$playing`t$pos`t$len"; $score = 0; if ($playing -eq '1') { $score += 50000 }; if ("$($props.PlaybackType)" -eq 'Music') { $score += 20 }; $id = $app.ToLower(); if ($id -match 'spotify|soundcloud|yandex|music|deezer|tidal|aimp|foobar|winamp|apple') { $score += 100 } elseif ($id -match 'chrome|edge|firefox|opera|brave') { $score += 10 }; if ($score -gt $bestScore) { $bestScore = $score; $best = $line } } } } catch { }; Write-Output $best; [Console]::Out.Flush(); Start-Sleep -Milliseconds 1000 }
         """;
 
     private static final boolean WINDOWS =
@@ -71,6 +71,10 @@ public final class MediaWatcher {
     }
 
     public static Track current() {
+        DynamicIslandMedia m = DynamicIslandMediaHolder.shared();
+        if (m.hasMedia()) {
+            return new Track(m.getTitle(), m.getArtist(), "SMTC", m.isPlaying(), m.getPositionMs(), m.getDurationMs());
+        }
         return track;
     }
 
@@ -85,8 +89,8 @@ public final class MediaWatcher {
                 + "(no Windows SMTC and no external script at config/{})", SCRIPT_FILE);
             return;
         }
-        Runtime.getRuntime().addShutdownHook(new Thread(MediaWatcher::stop, "linkenvisuals-media-cleanup"));
-        Thread thread = new Thread(MediaWatcher::pump, "linkenvisuals-media");
+        Runtime.getRuntime().addShutdownHook(new Thread(MediaWatcher::stop, "visuals-modification-media-cleanup"));
+        Thread thread = new Thread(MediaWatcher::pump, "visuals-modification-media");
         thread.setDaemon(true);
         thread.start();
     }
@@ -100,8 +104,10 @@ public final class MediaWatcher {
                 : new Provider(List.of("sh", script.toString()), false);
         }
         if (WINDOWS) {
+            byte[] utf16 = SCRIPT.getBytes(StandardCharsets.UTF_16LE);
+            String b64 = java.util.Base64.getEncoder().encodeToString(utf16);
             return new Provider(List.of("powershell.exe", "-NoProfile", "-NonInteractive",
-                "-Command", "-"), true);
+                "-EncodedCommand", b64), false);
         }
         return null;
     }

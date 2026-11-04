@@ -14,7 +14,13 @@ public abstract class OptimizationParticleMixin {
     @Inject(method = "addParticle(Lnet/minecraft/client/particle/Particle;)V",
         at = @At("HEAD"), cancellable = true)
     private void linkenvisuals$cullDistantParticle(Particle particle, CallbackInfo ci) {
+        if (particle == null) {
+            return;
+        }
         Box box = particle.getBoundingBox();
+        if (box == null) {
+            return;
+        }
         double x = (box.minX + box.maxX) * 0.5;
         double y = (box.minY + box.maxY) * 0.5;
         double z = (box.minZ + box.maxZ) * 0.5;

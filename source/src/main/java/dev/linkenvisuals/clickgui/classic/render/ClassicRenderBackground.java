@@ -12,7 +12,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
 
 public final class ClassicRenderBackground {
-    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/logo.png");
+    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/linken_logo.png");
 
     private ClassicRenderBackground() {
     }

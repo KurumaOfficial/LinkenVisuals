@@ -28,7 +28,6 @@ import dev.linkenvisuals.module.Modules;
 import dev.linkenvisuals.ui.Theme;
 import dev.linkenvisuals.module.impl.KillStreakModule;
 import dev.linkenvisuals.module.impl.HitSoundModule;
-import dev.linkenvisuals.module.impl.ViewModelModule;
 import dev.linkenvisuals.player.FakePlayer;
 import dev.linkenvisuals.ui.linkmenu.LinkenPauseScreen;
 import dev.linkenvisuals.render.CustomHitBoxRenderer;
@@ -760,55 +759,6 @@ public final class AutoTestDriver {
             }
         });
 
-        add("enable view model", 1, () -> {
-            if (Modules.viewModel() != null) {
-                Modules.viewModel().info().toggleSilently(true);
-            }
-            ViewModelModule.resetDiagnostics();
-        });
-        add("pose view model", 2, () -> {
-            if (Modules.viewModel() != null) {
-                ViewModelModule vm = Modules.viewModel();
-                vm.mainX.setValue(0.35f);
-                vm.mainY.setValue(-0.05f);
-                vm.mainZ.setValue(0.2f);
-                vm.mainScaleX.setValue(0.8f);
-                vm.mainScaleY.setValue(0.8f);
-                vm.mainScaleZ.setValue(0.8f);
-            }
-        });
-        add("wait view model", 6, () -> {
-        });
-        add("check view model", 2, () -> {
-            ViewModelModule vm = Modules.viewModel();
-            if (vm == null || !vm.enabled()) {
-                throw new IllegalStateException("ViewModel module is not enabled");
-            }
-            if (!ViewModelModule.lastAppliedVisible()) {
-                throw new IllegalStateException("ViewModel transform was not applied in first person");
-            }
-        });
-        add("screenshot view model", 1, () -> screenshot(client, "viewmodel"));
-        add("restore view model", 1, () -> {
-            ViewModelModule vm = Modules.viewModel();
-            if (vm != null) {
-                vm.mainX.setValue(0.0f);
-                vm.mainY.setValue(0.0f);
-                vm.mainZ.setValue(0.0f);
-                vm.mainScaleX.setValue(1.0f);
-                vm.mainScaleY.setValue(1.0f);
-                vm.mainScaleZ.setValue(1.0f);
-                vm.offX.setValue(0.0f);
-                vm.offY.setValue(0.0f);
-                vm.offZ.setValue(0.0f);
-                vm.offScaleX.setValue(1.0f);
-                vm.offScaleY.setValue(1.0f);
-                vm.offScaleZ.setValue(1.0f);
-                vm.info().toggleSilently(false);
-            }
-            ViewModelModule.resetDiagnostics();
-        });
-
         add("enable killstreak hud", 1, () -> {
             if (ModuleRegistry.killStreakHud() != null) {
                 ModuleRegistry.killStreakHud().setValue(true);
@@ -827,15 +777,15 @@ public final class AutoTestDriver {
         add("screenshot ClickGUI", 1, () -> screenshot(client, "clickgui"));
         add("close ClickGUI", 4, () -> client.setScreen(null));
 
-        add("open LINKEN main menu", 13, () -> client.setScreen(new LinkenMainMenuScreen()));
+        add("open editorial main menu", 13, () -> client.setScreen(new LinkenMainMenuScreen()));
         add("wait welcome", 20, () -> {
         });
         add("screenshot welcome", 1, () -> screenshot(client, "welcome"));
         add("skip welcome", 1, LinkenMainMenuScreen::skipWelcome);
-        add("wait LINKEN main menu", 8, () -> {
+        add("wait editorial main menu", 8, () -> {
         });
-        add("screenshot LINKEN main menu", 1, () -> screenshot(client, "linken-mainmenu"));
-        add("close LINKEN main menu", 4, () -> client.setScreen(null));
+        add("screenshot editorial main menu", 1, () -> screenshot(client, "editorial-mainmenu"));
+        add("close editorial main menu", 4, () -> client.setScreen(null));
 
         boolean pinWasSet = LinkGuiConfig.pinned("ClickGUI");
         add("pin link test", 1, () -> {
@@ -1076,18 +1026,14 @@ public final class AutoTestDriver {
             FakePlayer.clear();
         });
 
-        add("open LINKEN pause", 8, () -> client.setScreen(new GameMenuScreen(true)));
-        add("check LINKEN pause route", 1, () -> {
-            if (dev.linkenvisuals.BuildFlavor.STRANGE) {
-                if (!(client.currentScreen instanceof GameMenuScreen)) {
-                    throw new IllegalStateException("Strange build must keep the vanilla GameMenuScreen");
-                }
-            } else if (!(client.currentScreen instanceof LinkenPauseScreen)) {
+        add("open alternative pause", 8, () -> client.setScreen(new GameMenuScreen(true)));
+        add("check alternative pause route", 1, () -> {
+            if (!(client.currentScreen instanceof LinkenPauseScreen)) {
                 throw new IllegalStateException("GameMenuScreen was not routed to LinkenPauseScreen");
             }
         });
-        add("screenshot LINKEN pause", 2, () -> screenshot(client, "pause"));
-        add("close LINKEN pause", 2, () -> client.setScreen(null));
+        add("screenshot alternative pause", 2, () -> screenshot(client, "pause"));
+        add("close alternative pause", 2, () -> client.setScreen(null));
 
         add("jump pressed", 1, () -> client.options.jumpKey.setPressed(true));
         add("jump released", 4, () -> client.options.jumpKey.setPressed(false));
@@ -1469,7 +1415,7 @@ public final class AutoTestDriver {
             String stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(LocalDateTime.now());
             Path file = dir.resolve("linkenvisuals-autotest-" + stamp + ".log");
             StringBuilder out = new StringBuilder(2048);
-            out.append("LinkenVisuals in-game auto-test\n");
+            out.append("Visuals Modification in-game auto-test\n");
             out.append("when: ").append(LocalDateTime.now()).append('\n');
             out.append("finish: ").append(reason).append('\n');
             out.append("dimension: ").append(client.world != null

@@ -4,7 +4,6 @@ import dev.linkenvisuals.audio.LinkenSounds;
 import dev.linkenvisuals.clickgui.ModuleRegistry;
 import dev.linkenvisuals.cosmetic.CosmeticContext;
 import dev.linkenvisuals.cosmetic.Material;
-import dev.linkenvisuals.cosmetic.Plume;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
@@ -42,6 +41,7 @@ public final class KillEffects {
     private static final double[] atY = new double[POOL];
     private static final double[] atZ = new double[POOL];
     private static final float[] facing = new float[POOL];
+    private static final CosmeticContext CONTEXT = new CosmeticContext();
     private static final float[] tall = new float[POOL];
     private static final float[] wide = new float[POOL];
     private static final float[] born = new float[POOL];
@@ -91,10 +91,7 @@ public final class KillEffects {
             if (entity == null) {
                 continue;
             }
-            // Never pin entities (and via entity.getWorld(), whole worlds) across
-            // disconnects / dimension switches. clear() on DISCONNECT is the primary
-            // path; these guards cover dimension reuse and stale slots.
-            if (client.world == null || entity.isRemoved() || client.world.getEntityById(entity.getId()) != entity) {
+            if (client.world == null) {
                 watching[i] = null;
                 continue;
             }
@@ -102,7 +99,15 @@ public final class KillEffects {
                 watching[i] = null;
                 continue;
             }
-            if (!(entity instanceof LivingEntity living) || living.isAlive()) {
+            if (!(entity instanceof LivingEntity living)) {
+                watching[i] = null;
+                continue;
+            }
+            boolean dead = !living.isAlive() || living.getHealth() <= 0.0f || entity.isRemoved();
+            if (!dead) {
+                if (client.world.getEntityById(entity.getId()) != entity) {
+                    watching[i] = null;
+                }
                 continue;
             }
             watching[i] = null;
@@ -249,9 +254,10 @@ public final class KillEffects {
         for (int pass = 0; pass < 3; pass++) {
             VertexConsumer buffer = consumers.getBuffer(pass == CosmeticContext.SOLID
                 ? Material.SOLID : pass == CosmeticContext.SHEET ? Material.BODY : Material.LIGHT);
-            CosmeticContext ctx = new CosmeticContext(buffer, pass,
+            CONTEXT.set(buffer, pass,
                 matrices.peek().getPositionMatrix(), client.player,
                 clock, scale, colour, 0.0f, 0.0f, 1.0f);
+            CosmeticContext ctx = CONTEXT;
 
             for (int i = 0; i < POOL; i++) {
                 float age = (clock - born[i]) / life;
@@ -269,6 +275,11 @@ public final class KillEffects {
                     soul(ctx, x, y, z, height, girth, age, i);
                 }
             }
+        }
+        if (consumers instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
+            immediate.draw(Material.SOLID);
+            immediate.draw(Material.BODY);
+            immediate.draw(Material.LIGHT);
         }
     }
 
@@ -412,11 +423,7 @@ public final class KillEffects {
 
     private static void wings(CosmeticContext ctx, float height, float girth, float open,
                               float presence, int slot) {
-        float span = Math.max(height, 1.4f) * (0.22f + open * 1.0f);
-        float beat = (float) Math.sin(clock * 1.5 + slot * 1.3) * 0.13f * open;
-        Plume.render(ctx, frame, height * 0.92f, girth * 0.24f, -girth * 0.32f, span, open,
-            presence * open, beat, slot * 7, Material.deepen(ctx.color, 0.42f),
-            Material.lift(ctx.color, 0.6f));
+        // Purged legacy plume cosmetic
     }
 
     private static void shatter(CosmeticContext ctx, float x, float y, float z, float height,

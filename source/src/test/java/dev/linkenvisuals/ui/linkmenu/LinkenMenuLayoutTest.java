@@ -123,6 +123,26 @@ class LinkenMenuLayoutTest {
         assertEquals(hd.footer(), uhd.footer());
     }
 
+    @Test
+    void rectExpandAndMarginHitTesting() {
+        LinkenMenuLayout.Rect rect = new LinkenMenuLayout.Rect(100.0f, 100.0f, 50.0f, 50.0f);
+        assertTrue(rect.contains(100.0f, 100.0f));
+        assertTrue(rect.contains(150.0f, 150.0f));
+        assertFalse(rect.contains(95.0f, 100.0f));
+        assertFalse(rect.contains(100.0f, 155.0f));
+
+        assertTrue(rect.contains(95.0f, 100.0f, 6.0f));
+        assertTrue(rect.contains(100.0f, 155.0f, 6.0f));
+        assertFalse(rect.contains(90.0f, 100.0f, 6.0f));
+
+        LinkenMenuLayout.Rect expanded = rect.expand(8.0f);
+        assertEquals(92.0f, expanded.x(), 1.0e-6f);
+        assertEquals(92.0f, expanded.y(), 1.0e-6f);
+        assertEquals(66.0f, expanded.width(), 1.0e-6f);
+        assertEquals(66.0f, expanded.height(), 1.0e-6f);
+        assertTrue(expanded.contains(95.0f, 100.0f));
+    }
+
     private static void assertInside(LinkenMenuLayout.Rect rect, LinkenMenuLayout.Metrics metrics, String label) {
         assertTrue(rect.inside(metrics.width(), metrics.height()),
             "element " + rect + " is clipped at " + label);

@@ -30,6 +30,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.lwjgl.glfw.GLFW;
 
@@ -512,8 +513,10 @@ final class PetUltimate {
         }
 
         Matrix4f matrix = matrices.peek().getPositionMatrix();
-        Vector3fc right = camera.getHorizontalPlane();
+        // Camera.horizontalPlane is the forward vector, right = forward x up.
+        Vector3fc forwardAxis = camera.getHorizontalPlane();
         Vector3fc up = camera.getVerticalPlane();
+        Vector3fc right = new Vector3f(forwardAxis).cross(up);
 
         float dens = 1.05f + 1.55f * attach;
         float baseA = MathHelper.clamp(fogAlpha * dens, 0.0f, 1.0f);

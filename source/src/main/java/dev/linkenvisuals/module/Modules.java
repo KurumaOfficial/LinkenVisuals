@@ -7,6 +7,7 @@ import dev.linkenvisuals.module.impl.CrosshairModule;
 import dev.linkenvisuals.module.impl.CustomHitBoxModule;
 import dev.linkenvisuals.module.impl.CustomVitalsModule;
 import dev.linkenvisuals.module.impl.DamageParticlesModule;
+import dev.linkenvisuals.module.impl.DeathCoordsModule;
 import dev.linkenvisuals.module.impl.ElytraSwapModule;
 import dev.linkenvisuals.module.impl.FortniteDamageModule;
 import dev.linkenvisuals.module.impl.FtHelperModule;
@@ -40,7 +41,6 @@ import dev.linkenvisuals.module.impl.TotemCounterModule;
 import dev.linkenvisuals.module.impl.TotemTrackerModule;
 import dev.linkenvisuals.module.impl.TrailsModule;
 import dev.linkenvisuals.module.impl.UseTrackerModule;
-import dev.linkenvisuals.module.impl.ViewModelModule;
 import dev.linkenvisuals.module.impl.WaypointsModule;
 import dev.linkenvisuals.module.impl.ZoomModule;
 
@@ -84,11 +84,11 @@ public final class Modules {
     private static ParticlesModule particles;
     private static TrajectoriesModule trajectories;
     private static KillStreakModule killStreak;
-    private static ViewModelModule viewModel;
     private static CustomVitalsModule customVitals;
     private static ItemRadiusModule itemRadius;
     private static DamageParticlesModule damageParticles;
     private static FortniteDamageModule fortniteDamage;
+    private static DeathCoordsModule deathCoords;
     private static FtHelperModule ftHelper;
     private static HwHelperModule hwHelper;
     private static RwHelperModule rwHelper;
@@ -264,10 +264,6 @@ public final class Modules {
         return killStreak;
     }
 
-    public static ViewModelModule viewModel() {
-        return viewModel;
-    }
-
     public static CustomVitalsModule customVitals() {
         return customVitals;
     }
@@ -282,6 +278,10 @@ public final class Modules {
 
     public static FortniteDamageModule fortniteDamage() {
         return fortniteDamage;
+    }
+
+    public static DeathCoordsModule deathCoords() {
+        return deathCoords;
     }
 
     public static FtHelperModule ftHelper() {
@@ -300,8 +300,10 @@ public final class Modules {
      * Registers built-in object modules. Called once from mod init.
      */
     public static void init() {
+        // TEMPORARILY DISABLED: BlockOverlay is kept for internal tests only.
+        // Do not register it — the GUI must not expose a broken feature.
+        // Re-enable after the overlay rendering is fixed and verified.
         blockOverlay = new BlockOverlayModule();
-        register(blockOverlay);
         motionBlur = new MotionBlurModule();
         register(motionBlur);
         fullbright = new FullbrightModule();
@@ -368,8 +370,6 @@ public final class Modules {
         register(trajectories);
         killStreak = new KillStreakModule();
         register(killStreak);
-        viewModel = new ViewModelModule();
-        register(viewModel);
         customVitals = new CustomVitalsModule();
         register(customVitals);
         itemRadius = new ItemRadiusModule();
@@ -378,6 +378,8 @@ public final class Modules {
         register(damageParticles);
         fortniteDamage = new FortniteDamageModule();
         register(fortniteDamage);
+        deathCoords = new DeathCoordsModule();
+        register(deathCoords);
         ftHelper = new FtHelperModule();
         register(ftHelper);
         hwHelper = new HwHelperModule();

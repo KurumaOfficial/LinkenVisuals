@@ -95,6 +95,12 @@ public final class HandOutline {
     public static void captureBefore() {
         MinecraftClient client = MinecraftClient.getInstance();
         Framebuffer main = client.getFramebuffer();
+        // The editor moves the hand every tick; the full-screen outline pass is
+        // not needed while the user is dragging and made fast drags hitch.
+        if (HandEditor.active()) {
+            armed = false;
+            return;
+        }
         if (!enabled() || main == null || main.getDepthAttachment() == null) {
             // Hands FX off: don't hold 4 fullscreen buffers (2x depth + 2x trail).
             if (!enabled()) {
@@ -114,6 +120,10 @@ public final class HandOutline {
     public static void composite() {
         MinecraftClient client = MinecraftClient.getInstance();
         Framebuffer main = client.getFramebuffer();
+        if (HandEditor.active()) {
+            armed = false;
+            return;
+        }
         if (!armed || main == null || main.getColorAttachmentView() == null) {
             return;
         }
@@ -275,7 +285,7 @@ public final class HandOutline {
                 try {
                     fb.delete();
                 } catch (Throwable t) {
-                    dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Hand-outline release failed: {}", t.getMessage());
+                    dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Hand-outline release failed: {}", t.getMessage());
                 }
             }
         }

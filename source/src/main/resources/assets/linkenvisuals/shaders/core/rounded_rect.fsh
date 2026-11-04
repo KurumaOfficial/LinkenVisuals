@@ -22,6 +22,8 @@ void main() {
     vec2 delta = abs(point) - half_size + radius;
     float dist = length(max(delta, 0.0)) + min(max(delta.x, delta.y), 0.0) - radius;
 
+    // One physical pixel of coverage (the old 0.5 was half a pixel; on a
+    // scaled/HiDPI window rounded corners and circles looked stair-stepped).
     float aa = 1.0;
     float coverage = 1.0 - smoothstep(-aa, aa, dist);
     if (coverage <= 0.001) {

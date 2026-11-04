@@ -24,6 +24,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import java.util.UUID;
@@ -124,8 +125,10 @@ public final class TargetEspRenderer {
         Camera camera = client.gameRenderer.getCamera();
         Vec3d camPos = camera.getCameraPos();
         Matrix4f matrix = matrices.peek().getPositionMatrix();
-        Vector3fc right = camera.getHorizontalPlane();
+        // Camera.horizontalPlane is the forward vector, right = forward x up.
+        Vector3fc forwardAxis = camera.getHorizontalPlane();
         Vector3fc up = camera.getVerticalPlane();
+        Vector3fc right = new Vector3f(forwardAxis).cross(up);
         Vec3d targetPos = renderTarget.getLerpedPos(tickDelta);
 
         switch (module.mode.current()) {

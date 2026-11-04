@@ -43,7 +43,12 @@ public final class ClassicRenderSettings {
             float xSettings = x;
             float ySettings = y + up;
 
-            if (setting instanceof BooleanSetting bool) {
+            if (setting instanceof dev.linkenvisuals.clickgui.setting.ActionSetting action) {
+                boolean hovered = isHovered(mouseX, mouseY, xSettings + 5, ySettings + 4, 94, 14);
+                RenderUtil.Round.draw(ctx, xSettings + 5, ySettings + 4, 94, 14, 2.0F, hovered ? ColorUtil.getMainColor(1, 1) : mainCol);
+                FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, "Открыть гардероб", xSettings + 10, ySettings + 11, 5, textCol);
+                up += 20.0F;
+            } else if (setting instanceof BooleanSetting bool) {
                 FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, bool.name(), xSettings + 6, ySettings + 11, 5, textCol);
                 boolean hovered = isHovered(mouseX, mouseY, xSettings + 88, ySettings + 4, 10, 10);
                 RenderUtil.Round.draw(ctx, xSettings + 88, ySettings + 4, 10, 10, 2.0F, mainCol);

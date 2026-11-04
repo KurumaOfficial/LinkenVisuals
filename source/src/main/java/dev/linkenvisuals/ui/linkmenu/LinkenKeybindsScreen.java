@@ -261,6 +261,8 @@ public final class LinkenKeybindsScreen extends Screen {
             listening != null ? "PRESS A KEY  /  ESC CANCELS" : "RIGHT CLICK  /  RESET BIND",
             WINDOW_X + PAD + 166.0f, WINDOW_Y + height - 40.0f, 9.0f,
             LinkenMenuChrome.rgba(listening != null ? LinkenMenuChrome.ACCENT : LinkenMenuChrome.MUTED3, fade));
+
+        WindowMaterial.corners(context, WINDOW_X, WINDOW_Y, WINDOW_W, height, metrics.scale(), fade);
     }
 
     private void drawSearch(DrawContext context, LinkenMenuLayout.Metrics metrics, float mx, float my, float fade) {
@@ -529,7 +531,11 @@ public final class LinkenKeybindsScreen extends Screen {
             client.options.write();
         }
         if (client != null) {
-            client.setScreen(parent);
+            Screen target = parent;
+            if (target == null || target == this) {
+                target = client.world != null ? new LinkenPauseScreen() : new LinkenMainMenuScreen();
+            }
+            client.setScreen(target);
         }
     }
 }

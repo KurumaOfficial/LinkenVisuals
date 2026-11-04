@@ -21,7 +21,7 @@ public final class Material {
             .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.QUADS)
             .withBlend(BlendFunction.TRANSLUCENT)
             .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-            .withDepthWrite(false)
+            .withDepthWrite(true)
             .withCull(false)
             .build());
 
@@ -29,7 +29,7 @@ public final class Material {
         RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
             .withLocation(LinkenVisuals.id("pipeline/cosmetic_light"))
             .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.QUADS)
-            .withBlend(BlendFunction.LIGHTNING)
+            .withBlend(BlendFunction.TRANSLUCENT)
             .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
             .withDepthWrite(false)
             .withCull(false)
@@ -52,7 +52,7 @@ public final class Material {
         RenderSetup.builder(BODY_PIPELINE).translucent().expectedBufferSize(4096).build());
 
     public static final RenderLayer LIGHT = RenderLayer.of("linkenvisuals_cosmetic_light",
-        RenderSetup.builder(LIGHT_PIPELINE).expectedBufferSize(2048).build());
+        RenderSetup.builder(LIGHT_PIPELINE).translucent().expectedBufferSize(2048).build());
 
     private Material() {
     }
@@ -196,13 +196,43 @@ public final class Material {
         return ColorMath.deepen(rgb, amount);
     }
 
+    private static final float[] HSV_SCRATCH = new float[3];
+
     public static int shift(int rgb, float degrees) {
-        float[] hsv = dev.linkenvisuals.ui.Theme.rgbToHsv(rgb);
-        float hue = (hsv[0] + degrees / 360.0f) % 1.0f;
+        rgbToHsv(rgb, HSV_SCRATCH);
+        float hue = (HSV_SCRATCH[0] + degrees / 360.0f) % 1.0f;
         if (hue < 0.0f) {
             hue += 1.0f;
         }
-        return dev.linkenvisuals.ui.Theme.hsvToRgb(hue, hsv[1], hsv[2]);
+        return dev.linkenvisuals.ui.Theme.hsvToRgb(hue, HSV_SCRATCH[1], HSV_SCRATCH[2]);
+    }
+
+    private static void rgbToHsv(int rgb, float[] out) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        float rf = r / 255.0f;
+        float gf = g / 255.0f;
+        float bf = b / 255.0f;
+        float max = Math.max(rf, Math.max(gf, bf));
+        float min = Math.min(rf, Math.min(gf, bf));
+        float delta = max - min;
+        float h = 0.0f;
+        if (delta > 1.0e-5f) {
+            if (max == rf) {
+                h = ((gf - bf) / delta) % 6.0f;
+            } else if (max == gf) {
+                h = ((bf - rf) / delta) + 2.0f;
+            } else {
+                h = ((rf - gf) / delta) + 4.0f;
+            }
+            h /= 6.0f;
+            if (h < 0.0f) h += 1.0f;
+        }
+        float s = max > 1.0e-5f ? delta / max : 0.0f;
+        out[0] = h;
+        out[1] = s;
+        out[2] = max;
     }
 
     public static int mix(int from, int to, float amount) {

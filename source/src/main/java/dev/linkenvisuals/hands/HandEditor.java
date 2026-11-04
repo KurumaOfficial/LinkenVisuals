@@ -34,6 +34,9 @@ public final class HandEditor {
     private static double lastX;
     private static double lastY;
     private static boolean dirty;
+    private static boolean savePending;
+    private static long lastSaveNanos = System.nanoTime();
+    private static final long SAVE_INTERVAL_NANOS = 250_000_000L;
     private static long lastFrame = System.nanoTime();
 
     private HandEditor() {
@@ -184,6 +187,7 @@ public final class HandEditor {
     }
 
     public static void tick() {
+        flushSave();
         MinecraftClient client = MinecraftClient.getInstance();
         if (!active() || client.getWindow() == null) {
             release();
@@ -222,10 +226,22 @@ public final class HandEditor {
 
     private static void release() {
         if (grabbed != null && dirty) {
-            HandPose.save();
+            // Defer the disk write: a fast drag/scroll can release many times
+            // per second, and synchronous JSON+ATOMIC_MOVE on the client tick
+            // showed up as a hitch. The shutdown hook flushes any remainder.
+            savePending = true;
             dirty = false;
         }
         grabbed = null;
+    }
+
+    private static void flushSave() {
+        if (!savePending || System.nanoTime() - lastSaveNanos < SAVE_INTERVAL_NANOS) {
+            return;
+        }
+        savePending = false;
+        lastSaveNanos = System.nanoTime();
+        HandPose.save();
     }
 
     public static void renderOverlay(DrawContext context, double mouseX, double mouseY) {

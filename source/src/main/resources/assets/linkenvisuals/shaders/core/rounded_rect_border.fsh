@@ -23,13 +23,15 @@ void main() {
     vec2 delta = abs(point) - halfSize + radius;
     float dist = length(max(delta, 0.0)) + min(max(delta.x, delta.y), 0.0) - radius;
 
-    float thickness = max(borderParams.x, 0.5);
-    float internalSmooth = max(borderParams.y, 0.5);
-    float externalSmooth = max(borderParams.z, 0.5);
+    float thickness = max(borderParams.x, 0.0);
+    float internalSmooth = max(borderParams.y, 0.01);
+    float externalSmooth = max(borderParams.z, 0.01);
 
-    float outer = 1.0 - smoothstep(-externalSmooth, externalSmooth, dist);
-    float inner = 1.0 - smoothstep(-thickness - internalSmooth, -thickness + internalSmooth, dist);
-    float ring = clamp(outer - inner, 0.0, 1.0);
+    // Donor border.fsh: rising inner smoothstep * falling outer smoothstep (no hard hole).
+    float inner = smoothstep(-thickness - internalSmooth - externalSmooth,
+                             -thickness - externalSmooth, dist);
+    float outer = 1.0 - smoothstep(-externalSmooth, 0.0, dist);
+    float ring = clamp(inner * outer, 0.0, 1.0);
     if (ring <= 0.001) {
         discard;
     }

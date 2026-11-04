@@ -26,7 +26,9 @@ class BlockOverlayModuleTest {
         BlockOverlayModule module = new BlockOverlayModule();
         assertEquals("blockoverlay", module.id());
         assertEquals("Block Overlay", module.info().name());
-        assertTrue(module.enabled(), "overlay should be on by default");
+        // TEMPORARILY DISABLED: the module is hidden from the GUI until the
+        // block-overlay rendering bugs are fixed.
+        assertFalse(module.enabled(), "overlay must stay off while hidden from the GUI");
         assertTrue(module.fill.value());
         assertTrue(module.useShader.value());
         assertEquals(FillMode.AURORA, module.mode());
@@ -43,9 +45,11 @@ class BlockOverlayModuleTest {
     }
 
     @Test
-    void registersThroughModulesFacade() {
+    void hiddenFromGuiWhileDisabled() {
         BlockOverlayModule module = new BlockOverlayModule();
-        Modules.register(module);
-        assertSame(module, Modules.get("blockoverlay"));
+        assertFalse(module.enabled());
+        // TEMPORARILY DISABLED: not registered, so neither GUI nor config can
+        // turn it on. Re-enable the registration together with the fix.
+        assertNull(Modules.get("blockoverlay"));
     }
 }

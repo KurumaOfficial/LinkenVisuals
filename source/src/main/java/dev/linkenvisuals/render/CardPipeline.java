@@ -44,10 +44,8 @@ public final class CardPipeline {
         }
 
         MinecraftClient mc = MinecraftClient.getInstance();
-        float guiScale = mc != null && mc.getWindow() != null ? (float) mc.getWindow().getScaleFactor() : 1.0f;
-        float radiusPx = (float) Theme.radiusLevel() * 4.0f * guiScale;
-
         Matrix3x2f pose = new Matrix3x2f(context.getMatrices());
+        float radiusPx = (float) Theme.radiusLevel() * 4.0f * RoundedRectPipeline.matrixScale(pose);
         float z = radiusPx;
 
         ScreenRect bounds = new ScreenRect(

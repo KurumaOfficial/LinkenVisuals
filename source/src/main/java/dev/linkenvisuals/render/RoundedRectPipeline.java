@@ -24,6 +24,7 @@ public final class RoundedRectPipeline {
     private static final RenderPipeline FILL = build("rounded_rect", "core/rounded_rect");
     private static final RenderPipeline OUTLINE = build("rounded_rect_outline", "core/rounded_rect_outline");
     private static final RenderPipeline BORDER = buildBorder();
+    private static final RenderPipeline COBWEB_FILL = buildCobwebFill();
 
     private RoundedRectPipeline() {
     }
@@ -37,7 +38,23 @@ public final class RoundedRectPipeline {
                 .withLocation(LinkenVisuals.id("pipeline/" + name))
                 .withVertexShader(LinkenVisuals.id("core/rounded_rect"))
                 .withFragmentShader(LinkenVisuals.id(shader))
-                .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, com.mojang.blaze3d.vertex.VertexFormat.DrawMode.QUADS)
+                .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.DrawMode.QUADS)
+                .withBlend(BlendFunction.TRANSLUCENT)
+                .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+                .withCull(false)
+                .build());
+    }
+
+    /** Panel fill with the donor cobweb shader baked into the same draw call, so the GUI
+     *  pipeline batching keeps it behind the content and the dark overlay. */
+    private static RenderPipeline buildCobwebFill() {
+        return Pipelines.register(
+            RenderPipeline.builder(RenderPipelines.TRANSFORMS_AND_PROJECTION_SNIPPET)
+                .withLocation(LinkenVisuals.id("pipeline/rounded_rect_cobweb"))
+                .withVertexShader(LinkenVisuals.id("core/rounded_rect_cobweb"))
+                .withFragmentShader(LinkenVisuals.id("core/rounded_rect_cobweb"))
+                .withSampler("Sampler0")
+                .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR_NORMAL, com.mojang.blaze3d.vertex.VertexFormat.DrawMode.QUADS)
                 .withBlend(BlendFunction.TRANSLUCENT)
                 .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                 .withCull(false)
@@ -66,6 +83,67 @@ public final class RoundedRectPipeline {
         quad(context, FILL, x, y, width, height, radius, 0.0f, argb);
     }
 
+    /** Dark glass panel + animated cobweb shader (1.21.4 cosmetics/command-delay backdrop). */
+    public static void drawPanelBackground(DrawContext context, float x, float y, float width, float height,
+                                           float radius, int argb) {
+        if (width <= 0.0f || height <= 0.0f) {
+            return;
+        }
+        Matrix3x2f pose = new Matrix3x2f(context.getMatrices());
+        float scale = matrixScale(pose);
+        float radiusPx = radius * scale;
+        float z = radiusPx;
+
+        ScreenRect bounds = new ScreenRect(
+            (int) Math.floor(x),
+            (int) Math.floor(y),
+            (int) Math.ceil(width),
+            (int) Math.ceil(height)
+        ).transformEachVertex(pose);
+        ScreenRect scissor = context.scissorStack != null ? context.scissorStack.peekLast() : null;
+        dev.linkenvisuals.render.CobwebTimeTexture.update();
+        var phaseTexture = MinecraftClient.getInstance() == null ? null
+                : MinecraftClient.getInstance().getTextureManager()
+                        .getTexture(dev.linkenvisuals.render.CobwebTimeTexture.id());
+        var phaseView = phaseTexture == null ? null : phaseTexture.getGlTextureView();
+
+        context.state.addSimpleElement(new SimpleGuiElementRenderState() {
+            @Override
+            public void setupVertices(VertexConsumer consumer) {
+                Vector2f p0 = pose.transformPosition(x, y, new Vector2f());
+                Vector2f p1 = pose.transformPosition(x, y + height, new Vector2f());
+                Vector2f p2 = pose.transformPosition(x + width, y + height, new Vector2f());
+                Vector2f p3 = pose.transformPosition(x + width, y, new Vector2f());
+
+                consumer.vertex(p0.x, p0.y, z).texture(0.0f, 0.0f).color(argb).normal(0.0f, 1.0f, 0.0f);
+                consumer.vertex(p1.x, p1.y, z).texture(0.0f, 1.0f).color(argb).normal(0.0f, 1.0f, 0.0f);
+                consumer.vertex(p2.x, p2.y, z).texture(1.0f, 1.0f).color(argb).normal(0.0f, 1.0f, 0.0f);
+                consumer.vertex(p3.x, p3.y, z).texture(1.0f, 0.0f).color(argb).normal(0.0f, 1.0f, 0.0f);
+            }
+
+            @Override
+            public RenderPipeline pipeline() {
+                return COBWEB_FILL;
+            }
+
+            @Override
+            public TextureSetup textureSetup() {
+                return phaseView == null ? TextureSetup.empty()
+                        : TextureSetup.of(phaseView, phaseTexture.getSampler());
+            }
+
+            @Override
+            public ScreenRect scissorArea() {
+                return scissor;
+            }
+
+            @Override
+            public ScreenRect bounds() {
+                return bounds;
+            }
+        });
+    }
+
     public static void drawOutline(DrawContext context, float x, float y, float width, float height, int argb) {
         quad(context, OUTLINE, x, y, width, height, (float) Theme.radiusLevel(), 1.0f, argb);
     }
@@ -76,6 +154,14 @@ public final class RoundedRectPipeline {
 
     public static void drawOutline(DrawContext context, float x, float y, float width, float height, float radius, float thickness, int argb) {
         quad(context, OUTLINE, x, y, width, height, radius, thickness, argb);
+    }
+
+    /** Per-corner coloured outline used by the donor's gradient borders. */
+    public static void drawOutlineGradient(DrawContext context, float x, float y, float width, float height,
+                                           float radius, float thickness,
+                                           int topLeft, int bottomLeft, int bottomRight, int topRight) {
+        quad(context, OUTLINE, x, y, width, height, radius, thickness,
+                topLeft, bottomLeft, bottomRight, topRight);
     }
 
     public static void drawVerticalGradient(DrawContext context, float x, float y, float width, float height,
@@ -100,13 +186,13 @@ public final class RoundedRectPipeline {
             return;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
-        float guiScale = mc != null && mc.getWindow() != null ? (float) mc.getWindow().getScaleFactor() : 1.0f;
-        float radiusPx = radius * guiScale;
-        float thicknessPx = Math.max(0.0f, thickness * guiScale);
-        float internalPx = Math.max(0.5f, internalSmoothness * guiScale);
-        float externalPx = Math.max(0.5f, externalSmoothness * guiScale);
-
         Matrix3x2f pose = new Matrix3x2f(context.getMatrices());
+        float scale = matrixScale(pose);
+        float radiusPx = radius * scale;
+        float thicknessPx = Math.max(0.0f, thickness * scale);
+        float internalPx = Math.max(0.5f, internalSmoothness * scale);
+        float externalPx = Math.max(0.5f, externalSmoothness * scale);
+
         float z = radiusPx;
 
         ScreenRect bounds = new ScreenRect(
@@ -168,13 +254,11 @@ public final class RoundedRectPipeline {
             return;
         }
 
-        MinecraftClient mc = MinecraftClient.getInstance();
-        float guiScale = mc != null && mc.getWindow() != null ? (float) mc.getWindow().getScaleFactor() : 1.0f;
-        float radiusPx = radius * guiScale;
-        float thicknessPx = Math.max(1.0f, thickness * guiScale);
-
         Matrix3x2f pose = new Matrix3x2f(context.getMatrices());
-        float z = radiusPx + thicknessPx * 1000.0f;
+        float scale = matrixScale(pose);
+        float radiusPx = radius * scale;
+        float thicknessPx = Math.max(0.01f, thickness * scale);
+        float z = radiusPx;
 
         ScreenRect bounds = new ScreenRect(
             (int) Math.floor(x),
@@ -193,10 +277,10 @@ public final class RoundedRectPipeline {
                 Vector2f p2 = pose.transformPosition(x + width, y + height, new Vector2f());
                 Vector2f p3 = pose.transformPosition(x + width, y, new Vector2f());
 
-                consumer.vertex(p0.x, p0.y, z).texture(0.0f, 0.0f).color(topLeft);
-                consumer.vertex(p1.x, p1.y, z).texture(0.0f, 1.0f).color(bottomLeft);
-                consumer.vertex(p2.x, p2.y, z).texture(1.0f, 1.0f).color(bottomRight);
-                consumer.vertex(p3.x, p3.y, z).texture(1.0f, 0.0f).color(topRight);
+                consumer.vertex(p0.x, p0.y, z).texture(0.0f, 0.0f).color(topLeft).normal(thicknessPx, 0.0f, 0.0f);
+                consumer.vertex(p1.x, p1.y, z).texture(0.0f, 1.0f).color(bottomLeft).normal(thicknessPx, 0.0f, 0.0f);
+                consumer.vertex(p2.x, p2.y, z).texture(1.0f, 1.0f).color(bottomRight).normal(thicknessPx, 0.0f, 0.0f);
+                consumer.vertex(p3.x, p3.y, z).texture(1.0f, 0.0f).color(topRight).normal(thicknessPx, 0.0f, 0.0f);
             }
 
             @Override
@@ -219,5 +303,26 @@ public final class RoundedRectPipeline {
                 return bounds;
             }
         });
+    }
+
+    /**
+     * Shader radii live in screen pixels (fwidth of the quad UVs), while callers pass design-space
+     * radii. The GUI/ClickGUI canvas matrix can have any scale depending on the window size, so use
+     * the actual matrix scale instead of the GUI scale factor — otherwise corners change size when
+     * the window is resized.
+     */
+    public static float matrixScale(Matrix3x2f pose) {
+        float sx = (float) Math.hypot(pose.m00(), pose.m01());
+        float sy = (float) Math.hypot(pose.m10(), pose.m11());
+        // Shader distances are in physical framebuffer pixels (fwidth on the
+        // final vertex position), while the GUI matrix maps design units to
+        // GUI-scaled units. Include the window scale factor so radii, strokes
+        // and glows keep their donor size at every GUI scale.
+        float guiScale = 1.0f;
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client != null && client.getWindow() != null) {
+            guiScale = (float) client.getWindow().getScaleFactor();
+        }
+        return Math.max(0.01f, (sx + sy) * 0.5f * guiScale);
     }
 }

@@ -65,14 +65,9 @@ public abstract class ScreenMixin {
             return;
         }
 
-        if (screen instanceof net.minecraft.client.gui.screen.world.CreateWorldScreen
-            && dev.linkenvisuals.ui.style.StyleManager.getStyle()
-                == dev.linkenvisuals.ui.style.MenuStyle.LINKEN) {
-            BackgroundPipeline.draw(1.0f);
-            context.fillGradient(0, 0, width, height, 0x66020406, 0xCC050706);
-            GlowPipeline.radial(context, width * 0.5f, height * 0.38f, width * 0.38f,
-                (0x18 << 24) | (Theme.accent() & 0xFFFFFF));
-            ci.cancel();
+        if (screen instanceof SelectWorldScreen
+            || screen instanceof net.minecraft.client.gui.screen.world.CreateWorldScreen
+            || screen instanceof net.minecraft.client.gui.screen.world.EditWorldScreen) {
             return;
         }
 

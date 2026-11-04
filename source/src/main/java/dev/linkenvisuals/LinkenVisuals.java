@@ -18,7 +18,6 @@ import dev.linkenvisuals.clickgui.ModuleInfo;
 import dev.linkenvisuals.clickgui.ModuleRegistry;
 import dev.linkenvisuals.mixin.FogRendererAccessor;
 import dev.linkenvisuals.module.Modules;
-import dev.linkenvisuals.render.BlockOverlayRenderer;
 import dev.linkenvisuals.render.DamageParticlesRenderer;
 import dev.linkenvisuals.render.FortniteDamageRenderer;
 import dev.linkenvisuals.render.JumpCirclesRenderer;
@@ -29,7 +28,6 @@ import dev.linkenvisuals.render.WaypointsRenderer;
 import dev.linkenvisuals.player.FakePlayer;
 import dev.linkenvisuals.player.HitEffects;
 import dev.linkenvisuals.player.KillEffects;
-import dev.linkenvisuals.hud.NameTags;
 import dev.linkenvisuals.player.TargetMarks;
 import dev.linkenvisuals.clickgui.ConfigManager;
 import net.fabricmc.api.ClientModInitializer;
@@ -51,7 +49,7 @@ import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Core entry point for the LinkenVisuals client mod (Minecraft 1.21.11 / Fabric).
+ * Core entry point for the visuals modification client mod (Minecraft 1.21.11 / Fabric).
  * <p>
  * Responsible for:
  * <ul>
@@ -63,7 +61,7 @@ import org.lwjgl.glfw.GLFW;
  */
 public final class LinkenVisuals implements ClientModInitializer {
     public static final String MOD_ID = "linkenvisuals";
-    public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("LinkenVisuals");
+    public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("VisualsModification");
 
     public static final Identifier OPEN_SOUND_ID = Identifier.of(MOD_ID, "ui.open");
     public static final Identifier BACK_SOUND_ID = Identifier.of(MOD_ID, "ui.back");
@@ -103,20 +101,20 @@ public final class LinkenVisuals implements ClientModInitializer {
                 }
             });
         resourceLoader.addReloaderOrdering(ResourceReloaderKeys.Client.SHADERS, shaderReadyId);
-        migrateLegacyPlayerData();
         AccountStorage.load();
         dev.linkenvisuals.macro.MacroManager.load();
         HandPose.load();
         // Object modules must exist before config restore, otherwise their
         // enabled state/settings are skipped by ConfigJson.apply().
         Modules.init();
+        migrateLegacyBlockOverlay();
         dev.linkenvisuals.waypoint.WaypointStorage.load();
         ConfigManager.load();
         ModuleRegistry.enforceFlavorStyles();
         dev.linkenvisuals.ui.editor.MainMenuConfig.load();
         ModuleRegistry.syncFromMenuConfig();
 
-        LOGGER.info("[LinkenVisuals] Initialized successfully. Active Style: {}",
+        LOGGER.info("[Visuals Modification] Initialized successfully. Active Style: {}",
             dev.linkenvisuals.ui.style.StyleManager.getStyle().displayName());
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -126,7 +124,7 @@ public final class LinkenVisuals implements ClientModInitializer {
             AccountStorage.save();
             HandPose.save();
             dev.linkenvisuals.waypoint.WaypointStorage.save();
-        }, "linkenvisuals-shutdown"));
+        }, "visuals-modification-shutdown"));
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             TargetMarks.clear();
@@ -162,6 +160,11 @@ public final class LinkenVisuals implements ClientModInitializer {
             new KeyBinding("key.linkenvisuals.clickgui", GLFW.GLFW_KEY_RIGHT_SHIFT, LINKENVISUALS_CATEGORY));
 
         ClientTickEvents.END_CLIENT_TICK.register(LinkenVisuals::onTick);
+        boolean legacyBridgeActive = ru.method.linkenvisuals.LinkenVisuals.getInstance() != null;
+        LOGGER.debug("[Visuals Modification] Legacy bridge active: {}", legacyBridgeActive);
+        // Strange renderers are the active implementation. The legacy bridge
+        // keeps the block-outline pass and any donor module that has not been
+        // migrated yet; its duplicate modules are disabled by the migration.
         WorldRenderEvents.AFTER_ENTITIES.register(MenuCloseEffect::render);
         WorldRenderEvents.AFTER_ENTITIES.register(Cosmetics::render);
         WorldRenderEvents.AFTER_ENTITIES.register(PetRig::render);
@@ -170,28 +173,54 @@ public final class LinkenVisuals implements ClientModInitializer {
         WorldRenderEvents.AFTER_ENTITIES.register(HitEffects::render);
         WorldRenderEvents.AFTER_ENTITIES.register(KillEffects::render);
         WorldRenderEvents.AFTER_ENTITIES.register(TargetEspRenderer::render);
-        WorldRenderEvents.AFTER_ENTITIES.register(NameTags::capture);
         WorldRenderEvents.END_MAIN.register(RainRenderer::render);
         WorldRenderEvents.END_MAIN.register(HitBubbleRenderer::render);
         WorldRenderEvents.END_MAIN.register(KillShaderRenderer::render);
         WorldRenderEvents.END_MAIN.register(AmbienceRenderer::render);
         WorldRenderEvents.END_MAIN.register(ScreenFilterRenderer::renderWorld);
-        WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register(BlockOverlayRenderer::onBeforeBlockOutline);
-        WorldRenderEvents.END_MAIN.register(BlockOverlayRenderer::onEndMain);
-        WorldRenderEvents.END_MAIN.register(MotionBlurRenderer::onEndMain);
-        WorldRenderEvents.END_MAIN.register(TrailsRenderer::render);
-        WorldRenderEvents.END_MAIN.register(JumpCirclesRenderer::render);
-        WorldRenderEvents.END_MAIN.register(dev.linkenvisuals.render.HitRangeRenderer::render);
-        WorldRenderEvents.END_MAIN.register(dev.linkenvisuals.render.CustomHitBoxRenderer::render);
-        WorldRenderEvents.END_MAIN.register(dev.linkenvisuals.render.ParticlesRenderer::render);
-        WorldRenderEvents.END_MAIN.register(dev.linkenvisuals.render.TrajectoriesRenderer::render);
-        WorldRenderEvents.END_MAIN.register(ItemRadiusRenderer::render);
-        WorldRenderEvents.END_MAIN.register(DamageParticlesRenderer::render);
-        WorldRenderEvents.END_MAIN.register(WaypointsRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(TrailsRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(JumpCirclesRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(dev.linkenvisuals.render.HitRangeRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(dev.linkenvisuals.render.CustomHitBoxRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(dev.linkenvisuals.render.ParticlesRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(dev.linkenvisuals.render.TrajectoriesRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(ItemRadiusRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(DamageParticlesRenderer::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(WaypointsRenderer::render);
         dev.linkenvisuals.command.WaypointCommand.register();
         dev.linkenvisuals.autotest.AutoTestDriver.register();
         dev.linkenvisuals.autotest.LiveTestDriver.register();
         dev.linkenvisuals.autotest.AutoTestCommand.register();
+    }
+
+    /**
+     * The donor client still owns the block-outline hooks and the world pass,
+     * while the object-based GUI owns the module settings. Migrate the old
+     * BlockOverlay settings into the object module once, then hide the legacy
+     * duplicate so both GUIs cannot edit two different copies of the same
+     * feature. The new config, if present, is loaded afterwards and wins.
+     */
+    private static void migrateLegacyBlockOverlay() {
+        dev.linkenvisuals.module.impl.BlockOverlayModule modern = Modules.blockOverlay();
+        ru.method.linkenvisuals.LinkenVisuals legacy = ru.method.linkenvisuals.LinkenVisuals.getInstance();
+        if (modern == null || legacy == null || legacy.getModuleManager() == null) {
+            return;
+        }
+        ru.method.linkenvisuals.modules.impl.render.BlockOverlay old = legacy.getModuleManager()
+            .getModule(ru.method.linkenvisuals.modules.impl.render.BlockOverlay.class);
+        if (old == null) {
+            return;
+        }
+        modern.fill.setValueSilently(old.fill.getValue());
+        modern.useShader.setValueSilently(old.useShader.getValue());
+        modern.fillMode.set(old.fillMode.getValue().name());
+        modern.fillAlpha.setValue(old.fillAlpha.getValue());
+        modern.outlineAlpha.setValue(old.outlineAlpha.getValue());
+        modern.shaderSpeed.setValue(old.shaderSpeed.getValue());
+        // TEMPORARILY DISABLED: never re-enable the hidden module from an old
+        // config. Settings are migrated only so the eventual fix keeps them.
+        modern.info().toggleSilently(false);
+        legacy.getModuleManager().removeModule(ru.method.linkenvisuals.modules.impl.render.BlockOverlay.class);
     }
 
     /** Releases all world-scoped GPU pipelines. Must run on the render thread. */
@@ -253,21 +282,17 @@ public final class LinkenVisuals implements ClientModInitializer {
         }
     }
 
-    private static void migrateLegacyPlayerData() {
-        net.fabricmc.loader.api.FabricLoader loader = net.fabricmc.loader.api.FabricLoader.getInstance();
-        LegacyConfigMigration.Result migration =
-            LegacyConfigMigration.run(loader.getConfigDir(), loader.getGameDir());
-        if (migration.copied() > 0) {
-            LOGGER.info("[LinkenVisuals] Migrated {} legacy {} data entr{} to {}",
-                migration.copied(), LegacyConfigMigration.LEGACY_ID,
-                migration.copied() == 1 ? "y" : "ies", LegacyConfigMigration.CURRENT_ID);
-        }
-        for (String failure : migration.failures()) {
-            LOGGER.warn("[LinkenVisuals] Legacy migration: {}", failure);
-        }
-    }
+    private static boolean fontsWarmed;
 
     private static void onTick(MinecraftClient client) {
+        if (!fontsWarmed) {
+            try {
+                ru.method.linkenvisuals.utils.render.fonts.Fonts.warmup();
+                fontsWarmed = true;
+            } catch (Throwable ignored) {
+                // retry on the next tick
+            }
+        }
         if (!dev.linkenvisuals.render.Pipelines.resourcesReady() && client.getOverlay() == null) {
             // Splash/resource overlay is gone; shader sources are now available.
             // Deferring this to the first tick avoids compiling custom core
@@ -282,16 +307,17 @@ public final class LinkenVisuals implements ClientModInitializer {
             } else if (client.currentScreen instanceof dev.linkenvisuals.clickgui.link.LinkGuiScreen linken) {
                 linken.close();
             } else if (client.currentScreen == null) {
-                if (ModuleRegistry.isClassicGui()) {
-                    client.setScreen(new ClassicGuiScreen());
-                } else if (ModuleRegistry.isLinkenGui()) {
+                if (ModuleRegistry.isLinkenGui()) {
                     client.setScreen(new dev.linkenvisuals.clickgui.link.LinkGuiScreen());
+                } else if (ModuleRegistry.isClassicGui()) {
+                    client.setScreen(new ClassicGuiScreen());
                 } else {
                     client.setScreen(new ClickGuiScreen());
                 }
             }
         }
         updateFog();
+        dev.linkenvisuals.hands.HandEditor.tick();
         FakePlayer.tick(client);
         dev.linkenvisuals.render.TrailsRenderer.tick();
         dev.linkenvisuals.render.JumpCirclesRenderer.tick();
@@ -313,6 +339,15 @@ public final class LinkenVisuals implements ClientModInitializer {
         dev.linkenvisuals.module.impl.UseTrackerModule.tick();
         tickElytraSwap(client);
         tickTotemTracker(client);
+        tickDeathCoords(client);
+    }
+
+    private static void tickDeathCoords(MinecraftClient client) {
+        dev.linkenvisuals.module.impl.DeathCoordsModule module =
+            dev.linkenvisuals.module.Modules.deathCoords();
+        if (module != null) {
+            module.tick(client);
+        }
     }
 
     private static void tickElytraSwap(MinecraftClient client) {

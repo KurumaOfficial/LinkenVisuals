@@ -48,6 +48,7 @@ public abstract class ClientPlayerInteractionManagerMixin {
         TargetMarks.noteHit(target);
 
         HitColorModule.markHit(target.getId());
+        ru.method.linkenvisuals.modules.impl.render.HitColor.markHit(target.getId());
 
         KillEffects.watch(target);
 

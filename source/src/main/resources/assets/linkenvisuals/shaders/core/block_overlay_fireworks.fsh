@@ -4,12 +4,16 @@ in vec2 texCoord;
 out vec4 fragColor;
 
 layout(std140) uniform BlockOverlay {
-    float time;
-    vec2 screenSize;
-    vec4 baseColor;
-    float alpha;
-    float zoomFactor;
+    vec4 uParams;
+    vec4 uScreen;
+    vec4 uColor;
 };
+
+#define time (uParams.x)
+#define alpha (uParams.y)
+#define zoomFactor (max(0.001, uParams.z))
+#define screenSize (uScreen.xy)
+#define baseColor (uColor)
 
 // Быстрая хеш-функция
 float hash(vec2 p) {
@@ -38,7 +42,7 @@ float star(vec2 uv, float size, float rotation) {
     
     // Создаём форму звезды (4 луча)
     float d = length(uv);
-    float angle = atan(uv.y, uv.x);
+    float angle = (abs(uv.x) < 1e-5 && abs(uv.y) < 1e-5) ? 0.0 : atan(uv.y, uv.x);
     
     // 4 луча звезды с плавными переходами
     float rays = abs(sin(angle * 2.0)) * 0.5 + 0.5;

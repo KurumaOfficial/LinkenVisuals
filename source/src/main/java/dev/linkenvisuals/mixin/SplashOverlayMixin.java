@@ -101,18 +101,20 @@ public abstract class SplashOverlayMixin {
             String title = I18n.get("loading.splash.title");
             String subtitle = I18n.get(SplashProgress.stageKey(clamped));
 
-            if (Pipelines.resourcesReady()) {
-                LinkenLoadingScreen.render(context, context.getScaledWindowWidth(),
-                    context.getScaledWindowHeight(), clamped, alpha, exit, title, subtitle);
-            } else {
-                LinkenLoadingScreen.renderBootstrap(context, context.getScaledWindowWidth(),
-                    context.getScaledWindowHeight(), clamped, alpha, exit, title, subtitle);
+            // Render current screen (e.g. main menu) underneath the sliding exit splash
+            if (exit > 0.0f && client.currentScreen != null) {
+                client.currentScreen.render(context, mouseX, mouseY, delta);
+            } else if (reloading && client.currentScreen != null && sinceStart < 1.0f) {
+                client.currentScreen.render(context, mouseX, mouseY, delta);
             }
+
+            LinkenLoadingScreen.renderBootstrap(context, context.getScaledWindowWidth(),
+                context.getScaledWindowHeight(), clamped, alpha, exit, title, subtitle);
             ci.cancel();
         } catch (Throwable failure) {
             if (!linkenvisuals$failureLogged) {
                 linkenvisuals$failureLogged = true;
-                LinkenVisuals.LOGGER.warn("LINKEN splash failed, falling back to vanilla: {}",
+                LinkenVisuals.LOGGER.warn("[Visuals Modification] Splash failed, falling back to vanilla: {}",
                     failure.toString());
             }
         }

@@ -20,6 +20,9 @@ public final class GlyphAtlas {
     private final float atlasWidth;
     private final float atlasHeight;
     private final float ascender;
+    private final float descender;
+    private final float lineHeight;
+    private final float baselineHeight;
     private final IntObjectMap<Glyph> glyphs;
     private final IntObjectMap<IntFloatMap> kerning;
     private final WidthCache widthCache = new WidthCache(1024);
@@ -29,6 +32,9 @@ public final class GlyphAtlas {
         this.atlasWidth = data.atlas.width;
         this.atlasHeight = data.atlas.height;
         this.ascender = data.metrics.ascender;
+        this.descender = data.metrics.descender;
+        this.lineHeight = data.metrics.lineHeight;
+        this.baselineHeight = data.metrics.lineHeight + data.metrics.descender;
         this.glyphs = new IntObjectMap<>(Math.max(16, data.glyphs.length * 2));
         for (GlyphData source : data.glyphs) {
             glyphs.put(source.unicode, new Glyph(source, atlasWidth, atlasHeight));
@@ -76,6 +82,18 @@ public final class GlyphAtlas {
 
     public float ascender() {
         return ascender;
+    }
+
+    public float descender() {
+        return descender;
+    }
+
+    public float lineHeight() {
+        return lineHeight;
+    }
+
+    public float baselineHeight() {
+        return baselineHeight;
     }
 
     public Glyph glyph(int codepoint) {
@@ -134,7 +152,9 @@ public final class GlyphAtlas {
             Glyph glyph = glyph(codepoint);
             if (glyph != null) {
                 width += kerning(previous, codepoint) * size;
-                width += glyph.advance * size;
+                // Donor MsdfFont.computeWidth applies a 1.05 factor; wrapping and
+                // button widths depend on this exact metric.
+                width += glyph.advance * size * 1.05f;
                 previous = codepoint;
             }
             offset += Character.charCount(codepoint);
@@ -231,6 +251,8 @@ public final class GlyphAtlas {
 
     private static final class MetricsInfo {
         float ascender;
+        float descender;
+        float lineHeight;
     }
 
     private static final class GlyphData {

@@ -4,13 +4,18 @@
   "version": "${version}",
   "name": "LinkenVisuals",
   "description": "High-performance visual enhancement client mod for Minecraft Fabric 1.21.11.",
-  "authors": ["LinkenVisuals"],
+  "authors": ["method", "LinkenVisuals"],
+  "icon": "assets/linkenvisuals/logo.png",
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "client": ["dev.linkenvisuals.LinkenVisuals"]
+    "main": ["ru.method.linkenvisuals.LinkenVisuals"],
+    "client": [
+      "dev.linkenvisuals.LinkenVisuals",
+      "unkw.visualtest.client.Visual_testClient"
+    ]
   },
-  "mixins": ["linkenvisuals.mixins.json"],
+  "mixins": ["linkenvisuals.mixins.json", "dev.linkenvisuals.mixins.json", "visual-test.client.mixins.json"],
   "jars": [],
   "depends": {
     "fabricloader": ">=0.19.1",

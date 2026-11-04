@@ -17,15 +17,15 @@ out vec4 fragColor;
 void main() {
     vec2 p = texCoord0 - 0.5;
     float dist = length(p) - 0.49;
-    float aa = max(fwidth(dist), 0.0008) * 0.55;
+    // 1 px of coverage in *physical* framebuffer pixels. The previous 0.55
+    // produced a sub-pixel edge on HiDPI/GUI-scale-2 displays, which read as a
+    // hard, pixelated circle outline.
+    float aa = max(fwidth(dist), 0.0008) * 1.0;
     float coverage = 1.0 - smoothstep(-aa, aa, dist);
     if (coverage <= 0.001) {
         discard;
     }
 
     vec4 base = texture(Sampler0, texCoord0) * vertexColor;
-    float top = clamp(0.5 - p.y, 0.0, 1.0);
-    vec3 color = base.rgb + top * 0.04;
-
-    fragColor = vec4(color, base.a * coverage) * ColorModulator;
+    fragColor = vec4(base.rgb, base.a * coverage) * ColorModulator;
 }

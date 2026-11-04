@@ -16,10 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LightmapTextureManagerMixin {
     @Inject(method = "update", at = @At("HEAD"), cancellable = true)
     private void linkenvisuals$onLightmapUpdate(float delta, CallbackInfo ci) {
-        FullbrightModule module = Modules.fullbright();
-        if (module != null && module.enabled()) {
-            // Skip lightmap update entirely -> stays at full brightness.
-            ci.cancel();
-        }
+        // Let LightmapTextureManager calculate lightmap with 1.0f night vision strength
+        // provided by GameRendererMixin#linkenvisuals$fullbrightNightVision.
     }
 }

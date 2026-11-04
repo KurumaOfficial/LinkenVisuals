@@ -17,7 +17,7 @@ public final class ParticlesPipelines {
             .withFragmentShader(LinkenVisuals.id("core/particle_billboard"))
             .withSampler("Sampler0")
             .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.TRIANGLES)
-            .withBlend(BlendFunction.TRANSLUCENT)
+            .withBlend(BlendFunction.LIGHTNING)
             .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
             .withDepthWrite(false)
             .withCull(false)

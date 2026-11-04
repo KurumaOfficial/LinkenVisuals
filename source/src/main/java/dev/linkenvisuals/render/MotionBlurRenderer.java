@@ -41,18 +41,27 @@ public final class MotionBlurRenderer {
     }
 
     public static void onEndMain(WorldRenderContext context) {
+        float strength = 0f;
         MotionBlurModule module = Modules.motionBlur();
-        if (module == null || !module.enabled()) {
-            return;
+        if (module != null && module.enabled()) {
+            strength = module.strength.value() / 100.0f;
+        } else {
+            ru.method.linkenvisuals.LinkenVisuals inst = ru.method.linkenvisuals.LinkenVisuals.getInstance();
+            if (inst != null && inst.getModuleManager() != null) {
+                ru.method.linkenvisuals.modules.impl.render.MotionBlur donorMod =
+                    inst.getModuleManager().getModule(ru.method.linkenvisuals.modules.impl.render.MotionBlur.class);
+                if (donorMod != null && donorMod.isToggled()) {
+                    strength = donorMod.getStrengthValue();
+                }
+            }
         }
-        float strength = module.strength.value() / 100.0f;
         if (strength <= 0.001f) {
             return;
         }
         render(Math.min(0.95f, strength));
     }
 
-    private static void render(float strength) {
+    public static void render(float strength) {
         MinecraftClient client = MinecraftClient.getInstance();
         Framebuffer main = client.getFramebuffer();
         if (main == null || main.getColorAttachmentView() == null) {
@@ -151,7 +160,7 @@ public final class MotionBlurRenderer {
                 fb.delete();
             } catch (Throwable t) {
                 dev.linkenvisuals.LinkenVisuals.LOGGER.warn(
-                    "[LinkenVisuals] MotionBlur framebuffer release failed: {}", t.getMessage());
+                    "[Visuals Modification] MotionBlur framebuffer release failed: {}", t.getMessage());
             }
         }
     }

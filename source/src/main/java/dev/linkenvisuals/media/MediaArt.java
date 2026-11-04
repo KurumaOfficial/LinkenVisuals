@@ -65,7 +65,6 @@ public final class MediaArt {
             return;
         }
         loadedKey = key;
-        available = false;
         fetching = true;
 
         String seedKey = key;
@@ -92,7 +91,7 @@ public final class MediaArt {
     }
 
     private static final java.util.concurrent.ExecutorService EXECUTOR = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r, "linkenvisuals-art");
+        Thread thread = new Thread(r, "visuals-modification-art");
         thread.setDaemon(true);
         return thread;
     });

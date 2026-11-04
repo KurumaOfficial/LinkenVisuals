@@ -2,14 +2,7 @@ package dev.linkenvisuals.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import dev.linkenvisuals.hands.HandEditor;
-import dev.linkenvisuals.hands.HandMotion;
 import dev.linkenvisuals.hands.HandPose;
-import dev.linkenvisuals.clickgui.ModuleRegistry;
-import dev.linkenvisuals.module.Modules;
-import dev.linkenvisuals.module.impl.SwingAnimationModule;
-import dev.linkenvisuals.module.impl.ViewModelModule;
-
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.item.HeldItemRenderer;
@@ -17,7 +10,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
-import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,6 +17,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Strange/HandEditor first-person pose. Kept in the dev mixin set for the
+ * future non-legacy renderer; the legacy bridge uses the same logic in
+ * {@code ru.method.linkenvisuals.api.mixins.HeldItemRendererMixin}.
+ */
 @Mixin(HeldItemRenderer.class)
 public abstract class HeldItemRendererMixin {
     @Unique
@@ -34,14 +31,10 @@ public abstract class HeldItemRendererMixin {
     @Unique
     private static final float PIVOT_Z = HandEditor.PIVOT_Z;
 
-    @Unique
-    private static final float BOX_X = 0.26f;
-    @Unique
-    private static final float BOX_UP = 0.3f;
-    @Unique
-    private static final float BOX_DOWN = 0.42f;
-    @Unique
-    private static final float BOX_Z = 0.2f;
+    @Shadow
+    protected abstract void renderArmHoldingItem(MatrixStack matrices,
+                                                 OrderedRenderCommandQueue queue, int light,
+                                                 float equipProgress, float swingProgress, Arm arm);
 
     @ModifyExpressionValue(method = "renderItem(FLnet/minecraft/client/util/math/MatrixStack;"
         + "Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;"
@@ -63,11 +56,6 @@ public abstract class HeldItemRendererMixin {
         return original || HandEditor.active();
     }
 
-    @Shadow
-    protected abstract void renderArmHoldingItem(MatrixStack matrices,
-                                                 OrderedRenderCommandQueue queue, int light,
-                                                 float equipProgress, float swingProgress, Arm arm);
-
     @Inject(method = "renderFirstPersonItem", at = @At("HEAD"), cancellable = true)
     private void linkenvisuals$placeHand(AbstractClientPlayerEntity player, float tickProgress,
                                           float pitch, Hand hand, float swingProgress,
@@ -75,14 +63,12 @@ public abstract class HeldItemRendererMixin {
                                           OrderedRenderCommandQueue queue, int light, CallbackInfo ci) {
         Arm arm = hand == Hand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
         float side = arm == Arm.RIGHT ? 1.0f : -1.0f;
-
         float pivotX = side * PIVOT_X;
-        matrices.push();
 
+        matrices.push();
         float scaleX = HandPose.scaleX(arm);
         float scaleY = HandPose.scaleY(arm);
         float scaleZ = HandPose.scaleZ(arm);
-
         matrices.translate(pivotX + HandPose.x(arm), PIVOT_Y + HandPose.y(arm),
             PIVOT_Z + HandPose.z(arm));
         if (Math.abs(scaleX - 1.0f) > 0.0001f || Math.abs(scaleY - 1.0f) > 0.0001f
@@ -91,58 +77,11 @@ public abstract class HeldItemRendererMixin {
         }
         matrices.translate(-pivotX, -PIVOT_Y, -PIVOT_Z);
 
-        if (HandEditor.active()) {
-            if (stack.isEmpty() && hand == Hand.OFF_HAND && !player.isInvisible()) {
-                renderArmHoldingItem(matrices, queue, light, equipProgress, swingProgress, arm);
-                matrices.pop();
-                ci.cancel();
-            }
+        if (HandEditor.active() && stack.isEmpty() && hand == Hand.OFF_HAND && !player.isInvisible()) {
+            renderArmHoldingItem(matrices, queue, light, equipProgress, swingProgress, arm);
+            matrices.pop();
+            ci.cancel();
         }
-    }
-
-    /**
-     * Donor ViewModel anchors at the {@code renderItem} call, after the vanilla
-     * equip/swing transform. Applying the delta here (instead of at HEAD) keeps
-     * the donor offset/scale axes and the accepted {@link HandPose} transform
-     * independent. The same callback covers the normal and the use-action call.
-     */
-    @Inject(method = "renderFirstPersonItem",
-        at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/render/item/HeldItemRenderer;renderItem("
-                + "Lnet/minecraft/entity/LivingEntity;"
-                + "Lnet/minecraft/item/ItemStack;"
-                + "Lnet/minecraft/item/ItemDisplayContext;"
-                + "Lnet/minecraft/client/util/math/MatrixStack;"
-                + "Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V"),
-        require = 2)
-    private void linkenvisuals$applyViewModel(AbstractClientPlayerEntity player, float tickProgress,
-                                               float pitch, Hand hand, float swingProgress,
-                                               ItemStack stack, float equipProgress, MatrixStack matrices,
-                                               OrderedRenderCommandQueue queue, int light, CallbackInfo ci) {
-        ViewModelModule module = Modules.viewModel();
-        if (HandEditor.active()) {
-            return;
-        }
-        if (module != null && module.enabled()) {
-            module.apply(matrices, player, hand, stack);
-        }
-        if (ModuleRegistry.animateHand()) {
-            HandMotion.apply(matrices, player, hand, tickProgress);
-        }
-    }
-
-    @Inject(method = "swingArm", at = @At("RETURN"))
-    private void linkenvisuals$applySwingAnimation(float swingProgress, MatrixStack matrices, int armX,
-                                                   Arm arm, CallbackInfo ci) {
-        SwingAnimationModule module = Modules.swingAnimation();
-        if (module == null || !module.enabled()) {
-            return;
-        }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || arm != client.player.getMainArm()) {
-            return;
-        }
-        module.applyDelta(matrices, swingProgress, arm);
     }
 
     @Inject(method = "renderFirstPersonItem", at = @At("RETURN"))

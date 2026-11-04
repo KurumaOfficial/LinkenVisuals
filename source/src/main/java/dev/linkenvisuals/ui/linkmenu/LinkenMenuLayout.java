@@ -67,6 +67,15 @@ public final class LinkenMenuLayout {
             return px >= x && px <= right() && py >= y && py <= bottom();
         }
 
+        public boolean contains(float px, float py, float margin) {
+            return px >= x - margin && px <= right() + margin
+                && py >= y - margin && py <= bottom() + margin;
+        }
+
+        public Rect expand(float margin) {
+            return new Rect(x - margin, y - margin, width + margin * 2.0f, height + margin * 2.0f);
+        }
+
         public boolean inside(float screenWidth, float screenHeight) {
             return x >= 0.0f && y >= 0.0f && width > 0.0f && height > 0.0f
                 && right() <= screenWidth && bottom() <= screenHeight;

@@ -12,7 +12,12 @@ import java.util.List;
 /**
  * BlockOverlay (Phase 5.2, ported from the donor): replaces the vanilla block
  * outline with an animated shader fill (nine effects) plus a glow outline.
- * First object-based module — exercises the Phase 4 framework.
+ *
+ * <p><b>TEMPORARILY DISABLED.</b> The feature is hidden from both GUIs until
+ * the remaining rendering bugs are fixed (half-face solid fill, outline mask
+ * in the legacy hand/render path). Keep the module, renderer, pipelines and
+ * shaders in the tree; do not register the module in {@code Modules.init()}
+ * and do not add it to the legacy ModuleManager until the fix is verified.
  */
 public final class BlockOverlayModule extends Module {
     public enum FillMode {
@@ -62,7 +67,9 @@ public final class BlockOverlayModule extends Module {
         this.fillAlpha = fillAlpha;
         this.outlineAlpha = outlineAlpha;
         this.shaderSpeed = shaderSpeed;
-        info().toggleSilently(true);
+        // TEMPORARILY DISABLED: do not enable by default while the feature is
+        // hidden from the GUI. Re-enable after the overlay rendering is fixed.
+        info().toggleSilently(false);
     }
 
     public FillMode mode() {

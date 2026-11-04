@@ -1,5 +1,6 @@
 package dev.linkenvisuals.clickgui;
 
+import dev.linkenvisuals.BuildFlavor;
 import dev.linkenvisuals.clickgui.setting.BooleanSetting;
 import dev.linkenvisuals.clickgui.setting.ColorSetting;
 import dev.linkenvisuals.clickgui.setting.KeybindSetting;
@@ -76,6 +77,7 @@ public final class ModuleRegistry {
     private static SliderSetting killLife;
 
     private static ModuleInfo fakePlayer;
+    private static ModuleInfo discordRpc;
     private static ModeSetting fakeMode;
     private static SliderSetting fakeHealth;
     private static BooleanSetting fakeRespawn;
@@ -122,7 +124,6 @@ public final class ModuleRegistry {
     private static BooleanSetting animTab;
     private static BooleanSetting animInventory;
     private static BooleanSetting animPerspective;
-    private static BooleanSetting animHand;
     private static BooleanSetting albumArt;
     private static BooleanSetting lyricsEnabled;
     private static ColorSetting lyricsColour;
@@ -189,13 +190,7 @@ public final class ModuleRegistry {
             if (!onGui) {
                 return;
             }
-            if ("Classic".equalsIgnoreCase(style)) {
-                mc.setScreen(new dev.linkenvisuals.clickgui.classic.ClassicGuiScreen());
-            } else if ("Beta".equalsIgnoreCase(style)) {
-                mc.setScreen(new ClickGuiScreen());
-            } else if ("Linken".equalsIgnoreCase(style)) {
-                mc.setScreen(new dev.linkenvisuals.clickgui.link.LinkGuiScreen());
-            }
+            mc.setScreen(dev.linkenvisuals.ui.style.StyleRouting.resolveGuiScreen(style));
         });
         closeAnimation = new ModeSetting("Close Animation", List.of("Shatter", "Zoom Out"), 0);
         hudStyle = new ModeSetting("HUD Style", StyleFlavor.hudStyleOptions(), 0);
@@ -326,9 +321,8 @@ public final class ModuleRegistry {
         animTab = new BooleanSetting("Tab List", true);
         animInventory = new BooleanSetting("Inventory", true);
         animPerspective = new BooleanSetting("Camera (F5)", true);
-        animHand = new BooleanSetting("Hand Motion", true);
         betterAnimations = new ModuleInfo("Better Animations", "eases what vanilla snaps", Category.VISUAL,
-            List.of(animChat, animTab), List.of(animInventory, animPerspective, animHand));
+            List.of(animChat, animTab), List.of(animInventory, animPerspective));
         betterAnimations.toggleSilently(true);
         betterAnimations.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.INTERFACE);
         MODULES.add(betterAnimations);
@@ -339,10 +333,15 @@ public final class ModuleRegistry {
         aspectRatio.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.WORLD);
         MODULES.add(aspectRatio);
 
-        cosmeticCrown = new ModeSetting("Crown", List.of("None", "Halo", "Orbit", "Spires", "ChinaHat", "Nimb"), 1);
-        cosmeticBack = new ModeSetting("Back", List.of("None", "Kagune", "Seraph", "Tendrils", "WaveCape"), 1);
-        cosmeticAura = new ModeSetting("Aura", List.of("None", "Shards", "Embers", "Runes", "Spheres"), 0);
-        cosmeticCharacter = new ModeSetting("Character", List.of("Default", "Rudy"), 0);
+        List<String> crownOpts = List.of("None", "Nimb", "Halo", "Orbit", "Spires");
+        List<String> backOpts = List.of("None", "WaveCape", "Kagune", "Seraph", "Tendrils");
+        List<String> auraOpts = List.of("None", "Spheres", "Shards", "Embers", "Runes");
+        List<String> charOpts = List.of("Default", "Rudy", "Astolfo");
+
+        cosmeticCrown = new ModeSetting("Crown", crownOpts, crownOpts.indexOf("Halo") >= 0 ? crownOpts.indexOf("Halo") : 0);
+        cosmeticBack = new ModeSetting("Back", backOpts, backOpts.indexOf("Kagune") >= 0 ? backOpts.indexOf("Kagune") : 0);
+        cosmeticAura = new ModeSetting("Aura", auraOpts, 0);
+        cosmeticCharacter = new ModeSetting("Character", charOpts, 0);
         cosmeticColor = new ColorSetting("Colour", Theme.DEFAULT_ACCENT);
 
         cosmeticSize = new SliderSetting("Size", 0.6f, 1.5f, 0.05f, 1.0f, "x");
@@ -357,8 +356,18 @@ public final class ModuleRegistry {
         cosmeticPetGlow = new SliderSetting("Pet Glow", 0f, 100f, 1f, 65f, "%");
         cosmeticPetGlowColor = new ColorSetting("Pet Glow Colour", 0xFF141414);
         cosmeticPetUlt = new KeybindSetting("Pet ULT", "NONE");
+        dev.linkenvisuals.clickgui.setting.ActionSetting openWardrobeAction =
+            new dev.linkenvisuals.clickgui.setting.ActionSetting("Open Wardrobe", () -> {
+                net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+                if (client != null) {
+                    ru.method.linkenvisuals.modules.impl.player.CosmeticsModule mod =
+                        ru.method.linkenvisuals.LinkenVisuals.getInstance().getModuleManager().getModule(ru.method.linkenvisuals.modules.impl.player.CosmeticsModule.class);
+                    client.setScreen(new ru.method.linkenvisuals.screen.cosmetics.CosmeticsScreen(mod, client.currentScreen));
+                }
+            });
+
         cosmetics = new ModuleInfo("Cosmetics", "worn light, yours only", Category.VISUAL,
-            List.of(cosmeticCrown, cosmeticBack, cosmeticAura, cosmeticCharacter, cosmeticPet),
+            List.of(openWardrobeAction, cosmeticCrown, cosmeticBack, cosmeticAura, cosmeticCharacter, cosmeticPet),
             List.of(cosmeticColor, cosmeticSize, cosmeticSpeed, cosmeticPetRadius, cosmeticPetHeight,
                 cosmeticPetSpeed, cosmeticPetScale, cosmeticPetFirstPerson, cosmeticPetAlpha,
                 cosmeticPetGlow, cosmeticPetGlowColor, cosmeticPetUlt));
@@ -466,6 +475,53 @@ public final class ModuleRegistry {
         filters.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.WORLD);
         MODULES.add(filters);
 
+        discordRpc = new ModuleInfo("DiscordRPC", "show your presence on Discord", Category.MISC,
+            List.of(), List.of(), on -> {
+                ru.method.linkenvisuals.LinkenVisuals lv = ru.method.linkenvisuals.LinkenVisuals.getInstance();
+                if (lv != null && lv.getModuleManager() != null) {
+                    ru.method.linkenvisuals.modules.impl.client.DiscordRPC mod =
+                        lv.getModuleManager().getModule(ru.method.linkenvisuals.modules.impl.client.DiscordRPC.class);
+                    if (mod != null && mod.isToggle() != on) {
+                        mod.setToggled(on);
+                    }
+                }
+                if (on) {
+                    ru.method.linkenvisuals.utils.client.discord.DiscordRichPresenceUtil.discordrpc();
+                } else {
+                    ru.method.linkenvisuals.utils.client.discord.DiscordRichPresenceUtil.shutdownDiscord();
+                }
+            });
+        discordRpc.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.OTHER);
+        MODULES.add(discordRpc);
+
+        ModuleInfo allSkins = new ModuleInfo("AllSkins", "unlock all skins locally", Category.VISUAL,
+            List.of(), List.of(), on -> {
+                ru.method.linkenvisuals.LinkenVisuals lv = ru.method.linkenvisuals.LinkenVisuals.getInstance();
+                if (lv != null && lv.getModuleManager() != null) {
+                    ru.method.linkenvisuals.modules.impl.render.AllSkins mod =
+                        lv.getModuleManager().getModule(ru.method.linkenvisuals.modules.impl.render.AllSkins.class);
+                    if (mod != null && mod.isToggle() != on) {
+                        mod.setToggled(on);
+                    }
+                }
+            });
+        allSkins.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.PLAYER);
+        MODULES.add(allSkins);
+
+        ModuleInfo shiftTap = new ModuleInfo("ShiftTap", "automatically taps sneak on hit", Category.COMBAT,
+            List.of(), List.of(), on -> {
+                ru.method.linkenvisuals.LinkenVisuals lv = ru.method.linkenvisuals.LinkenVisuals.getInstance();
+                if (lv != null && lv.getModuleManager() != null) {
+                    ru.method.linkenvisuals.modules.impl.combat.ShiftTap mod =
+                        lv.getModuleManager().getModule(ru.method.linkenvisuals.modules.impl.combat.ShiftTap.class);
+                    if (mod != null && mod.isToggle() != on) {
+                        mod.setToggled(on);
+                    }
+                }
+            });
+        shiftTap.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.PLAYER);
+        MODULES.add(shiftTap);
+
         configProfile = new ModeSetting("Profile", List.of("default"), 0, profile -> {
             ConfigManager.loadProfile(profile);
         });
@@ -476,6 +532,10 @@ public final class ModuleRegistry {
         configModule.toggleSilently(true);
         configModule.withClassicCategory(dev.linkenvisuals.clickgui.classic.ClassicCategory.OTHER);
         MODULES.add(configModule);
+    }
+
+    public static ModuleInfo discordRpc() {
+        return discordRpc;
     }
 
     public static void syncConfigProfiles() {
@@ -657,12 +717,6 @@ public final class ModuleRegistry {
 
     public static ModuleInfo betterAnimations() {
         return betterAnimations;
-    }
-
-    /** True when the hand-motion subset of Better Animations is enabled. */
-    public static boolean animateHand() {
-        return betterAnimations != null && betterAnimations.enabled()
-            && (animHand == null || animHand.value());
     }
 
     public static ModuleInfo aspectRatio() {
@@ -1040,20 +1094,23 @@ public final class ModuleRegistry {
     }
 
     public static boolean isClassicGui() {
-        return guiStyle == null || "Classic".equalsIgnoreCase(guiStyle.value());
+        return guiStyle != null && "Classic".equalsIgnoreCase(guiStyle.value());
     }
 
     public static boolean isLinkenGui() {
         return guiStyle != null && "Linken".equalsIgnoreCase(guiStyle.value());
     }
 
-    /**
-     * While the Linken shell is active the style is locked: the user must not
-     * be able to fall back to Classic/Beta from the GUI or Ctrl+Left/Right.
-     * A single-style flavor (Linken-only or Strange-only) is locked too.
-     */
+    public static boolean isLinkenHud() {
+        return true;
+    }
+
+    public static boolean isLinkenMenu() {
+        return true;
+    }
+
     public static boolean isGuiStyleLocked() {
-        return StyleFlavor.isGuiStyleLocked() || isLinkenGui();
+        return StyleFlavor.isGuiStyleLocked();
     }
 
     /** Pure rule used by tests and callers that already have the style name. */

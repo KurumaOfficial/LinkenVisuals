@@ -57,6 +57,9 @@ public final class LowArmorNotificationsHud extends HudElement {
 
     @Override
     public float width() {
+        if (HudStyle.variant() == HudStyle.Variant.CARD) {
+            return 112.0f;
+        }
         MinecraftClient client = MinecraftClient.getInstance();
         String widest = previewMessage(client);
         for (Entry entry : ENTRIES) {

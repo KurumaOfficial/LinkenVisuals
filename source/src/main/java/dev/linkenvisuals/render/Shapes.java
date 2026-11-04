@@ -22,6 +22,17 @@ public final class Shapes {
         }
     }
 
+    public static void rhombus(DrawContext context, float centerX, float centerY, float radius, int argb) {
+        int r = Math.round(radius);
+        if (r < 1) r = 1;
+        int cx = Math.round(centerX);
+        int cy = Math.round(centerY);
+        for (int dy = -r; dy <= r; dy++) {
+            int span = r - Math.abs(dy);
+            context.fill(cx - span, cy + dy, cx + span + 1, cy + dy + 1, argb);
+        }
+    }
+
     public static void ring(DrawContext context, float centerX, float centerY, float radius, float thickness, int argb) {
         float inner = radius - thickness;
         int top = Math.round(centerY - radius);

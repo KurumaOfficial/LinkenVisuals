@@ -5,14 +5,10 @@ import dev.linkenvisuals.BuildFlavor;
 import java.util.List;
 
 /**
- * Compile-time style family lock. A normal build exposes only the Linken
- * family; {@code -Pstrange} exposes only the StrangeVisuals family. The two
- * families never mix in one jar, so a user cannot switch into the other
- * design through settings, hotkeys, configs or editor buttons.
+ * Compile-time style lock for the Linken visuals modification.
  */
 public final class StyleFlavor {
     public enum Family {
-        STRANGE,
         LINKEN
     }
 
@@ -86,25 +82,15 @@ public final class StyleFlavor {
         }
     }
 
-    private static final Rules STRANGE = new Rules(
-        List.of("Classic", "Beta"), "Classic",
-        List.of(MenuStyle.BETA, MenuStyle.VANILLA), MenuStyle.VANILLA,
-        List.of("Strange"), "Strange",
-        List.of("Rounded"), "Rounded");
-
     private static final Rules LINKEN = new Rules(
         List.of("Linken"), "Linken",
         List.of(MenuStyle.LINKEN), MenuStyle.LINKEN,
         List.of("Card", "Minimal", "Neon", "Aurora", "Glass", "Solid", "Gradient", "Outline"), "Card",
         List.of("Rounded", "Pill", "Sharp"), "Rounded");
 
-    public static final Family ACTIVE = BuildFlavor.STRANGE ? Family.STRANGE : Family.LINKEN;
+    public static final Family ACTIVE = Family.LINKEN;
 
     private StyleFlavor() {
-    }
-
-    public static boolean isStrange() {
-        return ACTIVE == Family.STRANGE;
     }
 
     public static Family family() {
@@ -203,12 +189,11 @@ public final class StyleFlavor {
         return rules().hudShapes().size() <= 1;
     }
 
-    /** Package-private so both flavors can be unit-tested from one build. */
     static Rules rulesFor(Family family) {
-        return family == Family.STRANGE ? STRANGE : LINKEN;
+        return LINKEN;
     }
 
     private static Rules rules() {
-        return rulesFor(ACTIVE);
+        return LINKEN;
     }
 }

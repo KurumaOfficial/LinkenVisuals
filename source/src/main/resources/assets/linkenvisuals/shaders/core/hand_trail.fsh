@@ -52,17 +52,19 @@ void main() {
         source.x += swirl * wander * texel.x;
     }
 
-    float held = texture(Sampler2, source).r * 0.2;
-    held += texture(Sampler2, source + vec2(spread.x, 0.0)).r * 0.125;
-    held += texture(Sampler2, source - vec2(spread.x, 0.0)).r * 0.125;
-    held += texture(Sampler2, source + vec2(0.0, spread.y)).r * 0.125;
-    held += texture(Sampler2, source - vec2(0.0, spread.y)).r * 0.125;
-    held += texture(Sampler2, source + spread * 0.7).r * 0.075;
-    held += texture(Sampler2, source - spread * 0.7).r * 0.075;
-    held += texture(Sampler2, source + vec2(spread.x, -spread.y) * 0.7).r * 0.075;
-    held += texture(Sampler2, source - vec2(spread.x, -spread.y) * 0.7).r * 0.075;
-
-    held = max(0.0, held * decay - 0.006);
+    float held = 0.0;
+    if (decay > 0.0) {
+        held = texture(Sampler2, source).r * 0.2;
+        held += texture(Sampler2, source + vec2(spread.x, 0.0)).r * 0.125;
+        held += texture(Sampler2, source - vec2(spread.x, 0.0)).r * 0.125;
+        held += texture(Sampler2, source + vec2(0.0, spread.y)).r * 0.125;
+        held += texture(Sampler2, source - vec2(0.0, spread.y)).r * 0.125;
+        held += texture(Sampler2, source + spread * 0.7).r * 0.075;
+        held += texture(Sampler2, source - spread * 0.7).r * 0.075;
+        held += texture(Sampler2, source + vec2(spread.x, -spread.y) * 0.7).r * 0.075;
+        held += texture(Sampler2, source - vec2(spread.x, -spread.y) * 0.7).r * 0.075;
+        held = max(0.0, held * decay - 0.006);
+    }
 
     float now = handMask(uv, texel);
 

@@ -59,11 +59,11 @@ public final class FortniteDamageRenderer {
             return;
         }
         Camera camera = client.gameRenderer.getCamera();
-        Vector3fc right = camera.getHorizontalPlane();
+        // Camera.horizontalPlane is the forward vector; right = forward x up.
+        Vector3fc forwardAxis = camera.getHorizontalPlane();
         Vector3fc up = camera.getVerticalPlane();
-        Vec3d rightVec = new Vec3d(right.x(), right.y(), right.z());
+        Vec3d forward = new Vec3d(forwardAxis.x(), forwardAxis.y(), forwardAxis.z());
         Vec3d upVec = new Vec3d(up.x(), up.y(), up.z());
-        Vec3d forward = rightVec.crossProduct(upVec);
         Vec3d position = camera.getCameraPos()
             .add(forward.multiply(4.0))
             .add(upVec.multiply(0.2));
@@ -142,11 +142,11 @@ public final class FortniteDamageRenderer {
         float fov = (float) Math.toRadians(Math.max(30, Math.min(110,
             client.options.getFov().getValue())));
         float focal = (float) (height / (2.0 * Math.tan(fov * 0.5)));
-        Vector3fc right = camera.getHorizontalPlane();
+        Vector3fc forwardAxis = camera.getHorizontalPlane();
         Vector3fc up = camera.getVerticalPlane();
-        Vec3d rightVec = new Vec3d(right.x(), right.y(), right.z());
+        Vec3d forwardVec = new Vec3d(forwardAxis.x(), forwardAxis.y(), forwardAxis.z());
         Vec3d upVec = new Vec3d(up.x(), up.y(), up.z());
-        Vec3d forwardVec = rightVec.crossProduct(upVec);
+        Vec3d rightVec = forwardVec.crossProduct(upVec);
         Vec3d cam = camera.getCameraPos();
         long now = System.currentTimeMillis();
         boolean visible = false;

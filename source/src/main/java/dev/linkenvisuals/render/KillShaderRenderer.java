@@ -144,7 +144,7 @@ public final class KillShaderRenderer {
             try {
                 scene.delete();
             } catch (Throwable t) {
-                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Kill-shader buffer release failed: {}", t.getMessage());
+                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Kill-shader buffer release failed: {}", t.getMessage());
             }
             scene = null;
         }

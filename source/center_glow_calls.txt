@@ -1,0 +1,4 @@
+6:         // Мягкий статичный ореол контура (GLOW-UPDATE §8, accent·0.35 — но приглушённо по альфе,
+8:         glow(ms, x, y, w, h, 12f, 22f, 46, 1f);
+49:             glow(ms, cursorX, bcy - 17f, allW, 34f, 7f, 8f, 128, 1f); // GLOW-UPDATE §5
+72:         glow(ms, searchX, searchY, searchW, 34f, 7f, 7f, 70, sfT);

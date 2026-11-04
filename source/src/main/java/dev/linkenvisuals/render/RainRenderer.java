@@ -192,7 +192,7 @@ public final class RainRenderer {
             try {
                 scene.delete();
             } catch (Throwable t) {
-                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Rain buffer release failed: {}", t.getMessage());
+                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Rain buffer release failed: {}", t.getMessage());
             }
             scene = null;
         }

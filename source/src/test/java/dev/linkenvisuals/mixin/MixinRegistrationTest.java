@@ -18,12 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Guards against mixin classes that compile but are never applied because the
- * config forgot to list them (the D97 NoRender regression).
+ * config forgot to list them.
  */
 final class MixinRegistrationTest {
     @Test
     void everyMixinClassIsRegisteredInTheConfig() throws IOException {
-        Path mixinDir = Path.of("src/main/java/dev/linkenvisuals/mixin");
+        Path mixinDir = Path.of("src/main/java/ru/method/linkenvisuals/api/mixins");
         Path config = Path.of("src/main/resources/linkenvisuals.mixins.json");
         Set<String> registered = new HashSet<>();
 
@@ -33,9 +33,11 @@ final class MixinRegistrationTest {
         collect(root, "server", registered);
         collect(root, "mixins", registered);
 
-        try (Stream<Path> files = Files.list(mixinDir)) {
-            files.map(path -> path.getFileName().toString())
-                .filter(name -> name.endsWith("Mixin.java"))
+        try (Stream<Path> files = Files.walk(mixinDir)) {
+            files.filter(path -> path.toString().endsWith(".java"))
+                .map(path -> mixinDir.relativize(path).toString()
+                    .replace('\\', '.')
+                    .replace('/', '.'))
                 .map(name -> name.substring(0, name.length() - ".java".length()))
                 .forEach(name -> assertTrue(registered.contains(name),
                     "mixin is not listed in linkenvisuals.mixins.json: " + name));

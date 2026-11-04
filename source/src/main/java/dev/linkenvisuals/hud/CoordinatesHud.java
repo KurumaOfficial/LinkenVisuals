@@ -6,6 +6,7 @@ import dev.linkenvisuals.render.Fonts;
 import dev.linkenvisuals.render.GlyphAtlas;
 import dev.linkenvisuals.render.MsdfText;
 import dev.linkenvisuals.render.RoundedRectPipeline;
+import dev.linkenvisuals.render.Shapes;
 import dev.linkenvisuals.ui.Theme;
 import dev.linkenvisuals.ui.linkmenu.LinkenFonts;
 import dev.linkenvisuals.util.ColorMath;
@@ -125,8 +126,8 @@ public final class CoordinatesHud extends HudElement {
         int bulletColor = LinkGuiTheme.isLight()
             ? ColorMath.withAlpha(0x6E7886, Math.round(150.0f * fa))
             : ColorMath.withAlpha(0xB4BECC, Math.round(150.0f * fa));
-        RoundedRectPipeline.draw(context, cursor + BULLET_SPACING, centerY - BULLET_SIZE * 0.5f,
-            BULLET_SIZE, BULLET_SIZE, BULLET_SIZE * 0.5f, bulletColor);
+        Shapes.rhombus(context, cursor + BULLET_SPACING + BULLET_SIZE * 0.5f, centerY,
+            BULLET_SIZE * 0.5f, bulletColor);
         cursor += BULLET_WIDTH;
 
         MsdfText.drawOn(context, bold(), bpsValue, cursor, centerY, FONT_SIZE, textColor);

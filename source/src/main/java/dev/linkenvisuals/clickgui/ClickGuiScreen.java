@@ -52,7 +52,7 @@ public final class ClickGuiScreen extends Screen {
         }
     }
 
-    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/strange_logo.png");
+    private static final Identifier LOGO = LinkenVisuals.id("textures/gui/linken_logo.png");
     private static final Identifier SEARCH_ICON = LinkenVisuals.id("textures/gui/ico_search.png");
 
     private static final float WINDOW_W = 496.0f;
@@ -713,6 +713,14 @@ public final class ClickGuiScreen extends Screen {
         MsdfText.draw(context, text, setting.name(), x + 7.0f, labelY, 6.4f,
             ColorMath.withAlpha(0xFFFFFF, Math.round((hovered ? 195 : 150) * openT)));
 
+        if (setting instanceof dev.linkenvisuals.clickgui.setting.ActionSetting action) {
+            PanelPipeline.draw(context, x + 5.0f, y + 2.0f, w - 10.0f, h - 4.0f,
+                ColorMath.withAlpha(hovered ? accent : 0x222222, Math.round(200 * openT)));
+            MsdfText.draw(context, bold, "Открыть гардероб", x + 10.0f, labelY, 6.4f,
+                ColorMath.withAlpha(0xFFFFFF, Math.round(255 * openT)));
+            return;
+        }
+
         if (setting instanceof BooleanSetting boolSetting) {
             boolSetting.glow.step(boolSetting.value() ? 1.0 : 0.0, deltaSeconds);
             float on = (float) boolSetting.glow.get();
@@ -1212,6 +1220,12 @@ public final class ClickGuiScreen extends Screen {
 
     private void handleSettingClick(Setting setting, float x, float y, float right, float mx, float my, boolean secondary) {
         float w = right - x;
+        if (setting instanceof dev.linkenvisuals.clickgui.setting.ActionSetting action) {
+            action.run();
+            dev.linkenvisuals.audio.LinkenSounds.playUiClick();
+            return;
+        }
+
         if (setting instanceof BooleanSetting boolSetting) {
             boolSetting.toggle();
         } else if (setting instanceof SliderSetting slider) {

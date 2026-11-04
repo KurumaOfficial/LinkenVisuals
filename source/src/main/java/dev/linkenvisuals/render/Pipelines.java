@@ -5,6 +5,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gl.RenderPipelines;
+import ru.method.linkenvisuals.utils.render.RoundedTexturePipeline;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -73,7 +74,8 @@ public final class Pipelines {
         warmed = true;
 
         BlitPipeline.init();
-        BlockOverlayPipelines.init();
+        // BlockOverlay still uses the donor renderer/pipelines while the legacy
+        // bridge is active. Do not register a second set under the same ids.
         CardPipeline.init();
         CirclePipeline.init();
         LiquidGlassPipeline.init();
@@ -88,9 +90,12 @@ public final class Pipelines {
         GlassPanelPipeline.init();
         GlassWindowPipeline.init();
         GlowPipeline.init();
+        GuiModelIconPipeline.init();
         IconPipeline.init();
         PanelPipeline.init();
+        RoundedTexturePipeline.init();
         RoundedRectPipeline.init();
+        ru.method.linkenvisuals.utils.render.RoundedGlowPipeline.init();
         SdfPipeline.init();
         TargetEspPipelines.init();
 

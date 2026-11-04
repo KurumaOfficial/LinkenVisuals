@@ -265,7 +265,7 @@ public final class MainMenuConfig {
             try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 instance = GSON.fromJson(reader, MainMenuConfig.class);
             } catch (Exception e) {
-                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Failed to load main menu config: {}", e.getMessage());
+                dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Failed to load main menu config: {}", e.getMessage());
             }
         }
         if (instance == null) {
@@ -303,7 +303,7 @@ public final class MainMenuConfig {
         try (Writer writer = AtomicFiles.openWriter(file())) {
             GSON.toJson(instance, writer);
         } catch (Exception e) {
-            dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[LinkenVisuals] Failed to save main menu config: {}", e.getMessage());
+            dev.linkenvisuals.LinkenVisuals.LOGGER.warn("[Visuals Modification] Failed to save main menu config: {}", e.getMessage());
         }
     }
 

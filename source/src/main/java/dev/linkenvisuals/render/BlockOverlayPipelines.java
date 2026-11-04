@@ -18,6 +18,9 @@ import java.util.Map;
  * fills — GLSL taken as text from the donor, JSON programs are dead on
  * 1.21.11 — plus a flat fill and a line outline. All drawn via an explicit
  * command-encoder pass at {@code END_MAIN}, like the other UBO renderers.
+ *
+ * <p><b>TEMPORARILY DISABLED / NEEDS FIXING.</b> The module is hidden from
+ * the GUI; keep these pipelines and shaders for the eventual fix.
  */
 public final class BlockOverlayPipelines {
     /**
