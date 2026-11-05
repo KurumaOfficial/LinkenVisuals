@@ -351,3 +351,18 @@ labels) because the merge enables donor behavior mixins and leaves the port
 behavior mixin list disabled. Re-enabling all of them would double-render the
 HUD and conflict with donor screen routing; this needs its own scoped merge
 task.
+
+### D121 — GUI Glow switch (v1.0.149)
+
+`UI → settings.ui.glow` (default true) is exposed as a `GUI GLOW` switch in the
+LinkGUI **INTERFACE** header and in the UI module settings. It drives the shared
+`UiGlow` flag, which gates `ClickGuiFirePass`, the donor/port `glow`/`tileGlow`
+helpers, `LinkGuiChrome` panel halo/ring and `WindowMaterial` radial/sheen.
+Panel borders and active fills stay visible. Verified ON/OFF visually; setting
+persists through `ConfigManager`.
+
+The main-menu background is still the donor **1270×999** asset
+(`mainmenu/bg-tower.png`, same bytes as `textures/linkmenu/bg-tower.png`). The
+original was exported for a customer-side upscale; target 4× (5080×3996) with
+the 1270:999 aspect and no crop. Once returned, replace both copies and verify
+cover at 1920×1080 and 2560×1440.
