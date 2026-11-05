@@ -139,7 +139,14 @@ public final class MenuChrome {
     public static void drawScreenBackground(Matrix3x2fStack ms, int vw, int vh, float parX, float parY) {
         MinecraftClient c = MinecraftClient.getInstance();
         if (c != null && c.world != null) {
-            // Кадр мира уже отрисован под экраном — матируем его размытием (backdrop blur 14px).
+            // Screens draw before HudManager, which returns early while a
+            // screen is open. Refresh the glass capture here or GlassRenderer
+            // samples a stale/empty texture (near-black connect backdrop).
+            try {
+                dev.linkenvisuals.render.HudGlassCapture.refresh();
+            } catch (RuntimeException ignored) {
+                // fall back to the vignette below
+            }
             Render2D.drawBlurredRect(ms, 0, 0, vw, vh, 0f, 14f, new Color(4, 7, 6, 48), true);
         } else {
             drawBackgroundArt(ms, vw, vh, parX, parY);

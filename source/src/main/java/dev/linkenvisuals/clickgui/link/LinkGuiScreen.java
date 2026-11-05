@@ -86,6 +86,8 @@ public final class LinkGuiScreen extends Screen {
     private static final Identifier BACKGROUND = LinkenVisuals.id("textures/linkmenu/bg-tower.png");
     private static final float BACKGROUND_WIDTH = 1270.0f;
     private static final float BACKGROUND_HEIGHT = 999.0f;
+    /** Global restraint for the ClickGUI halo; 1.0.147 was visibly over-lit. */
+    private static final float GLOW_SCALE = 0.55f;
 
     /**
      * Donor {@code TILE_GLOW_LAYERS}: the ON-card halo is approximated by a
@@ -396,14 +398,30 @@ public final class LinkGuiScreen extends Screen {
         if (client != null && client.world != null) {
             if (ModuleRegistry.interfaceBlur()) {
                 try {
-                    context.applyBlur();
+                    // Vanilla applyBlur() is a coarse half-res pass and reads
+                    // as blocky at 1440p/4K. Reuse the 1/2->1/4->1/8 glass
+                    // capture used by the donor menu, sampled with linear
+                    // filtering, then add a restrained depth gradient.
+                    dev.linkenvisuals.render.HudGlassCapture.refresh();
+                    context.drawTexture(RenderPipelines.GUI_TEXTURED,
+                        dev.linkenvisuals.render.HudGlassCapture.textureId(),
+                        0, 0, 0.0f, 0.0f, width, height,
+                        width, height, width, height,
+                        LinkenMenuChrome.rgba(0xFFFFFF, 255, openT));
+                    context.fillGradient(0, 0, width, height,
+                        LinkenMenuChrome.rgba(0x050706, 35, openT),
+                        LinkenMenuChrome.rgba(0x050706, 105, openT));
                 } catch (RuntimeException unavailable) {
                     LinkenVisuals.LOGGER.debug("[Visuals Modification] ClickGUI blur unavailable: {}", unavailable.getMessage());
+                    context.fill(0, 0, width, height,
+                        LinkenMenuChrome.rgba(LinkGuiTheme.isLight() ? 0xE9EDF2 : 0x050706,
+                            LinkGuiTheme.isLight() ? 170 : 150, openT));
                 }
+            } else {
+                context.fill(0, 0, width, height,
+                    LinkenMenuChrome.rgba(LinkGuiTheme.isLight() ? 0xE9EDF2 : 0x050706,
+                        LinkGuiTheme.isLight() ? 170 : 150, openT));
             }
-            context.fill(0, 0, width, height,
-                LinkenMenuChrome.rgba(LinkGuiTheme.isLight() ? 0xE9EDF2 : 0x050706,
-                    LinkGuiTheme.isLight() ? 170 : 150, openT));
             // No screen-wide radial here: the animated fire belongs around the
             // actual panels, as a separate rounded-rect shape, not a background circle.
             return;
@@ -1902,7 +1920,7 @@ public final class LinkGuiScreen extends Screen {
      */
     private void glow(DrawContext context, float x, float y, float w, float h,
                       float radius, float spread, int baseAlpha, float t) {
-        int al = Math.round(baseAlpha * MathHelper.clamp(t, 0f, 1f));
+        int al = Math.round(baseAlpha * GLOW_SCALE * MathHelper.clamp(t, 0f, 1f));
         if (al <= 1) {
             return;
         }
@@ -1933,7 +1951,7 @@ public final class LinkGuiScreen extends Screen {
         }
         for (float[] layer : TILE_GLOW_LAYERS) {
             float out = layer[0];
-            int al = Math.round(layer[1] * tt * 255.0f);
+            int al = Math.round(layer[1] * tt * 255.0f * GLOW_SCALE);
             if (al <= 1) {
                 continue;
             }

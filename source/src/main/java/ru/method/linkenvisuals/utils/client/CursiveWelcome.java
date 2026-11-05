@@ -1,5 +1,8 @@
 package ru.method.linkenvisuals.utils.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.NativeImage;
@@ -41,7 +44,7 @@ final class CursiveWelcome {
     // welcome.json layer transform: position (210.962, 63.445) - anchor (217.377, 69.099).
     private static final float LAYER_OFFSET_X = 210.962f - 217.377f;
     private static final float LAYER_OFFSET_Y = 63.445f - 69.099f;
-    private static final int TEX_SCALE = 2;
+    private static final int TEX_SCALE = 3;
     private static final int TEX_W = (int) BASE_W * TEX_SCALE;
     private static final int TEX_H = (int) BASE_H * TEX_SCALE;
     private static final Identifier TEXTURE_ID = LinkenVisuals.id("mainmenu/welcome_cursive");
@@ -164,7 +167,7 @@ final class CursiveWelcome {
     private static void ensureTexture(float start, float end) {
         if (texture == null) {
             NativeImage image = new NativeImage(NativeImage.Format.RGBA, TEX_W, TEX_H, false);
-            texture = new NativeImageBackedTexture(() -> "linken_welcome_cursive", image);
+            texture = new LinearTexture(image);
             MinecraftClient client = MinecraftClient.getInstance();
             TextureManager manager = client != null ? client.getTextureManager() : null;
             if (manager != null) {
@@ -278,5 +281,15 @@ final class CursiveWelcome {
     private static float bezier(float t, float p1, float p2) {
         float mt = 1f - t;
         return 3f * mt * mt * t * p1 + 3f * mt * t * t * p2 + t * t * t;
+    }
+
+    /** LINEAR minification: the default NEAREST sampler causes jagged edges at 1440p/4K. */
+    private static final class LinearTexture extends NativeImageBackedTexture {
+        LinearTexture(NativeImage image) {
+            super(() -> "linken_welcome_cursive", image);
+            this.sampler = RenderSystem.getSamplerCache().get(
+                AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE,
+                FilterMode.LINEAR, FilterMode.LINEAR, false);
+        }
     }
 }

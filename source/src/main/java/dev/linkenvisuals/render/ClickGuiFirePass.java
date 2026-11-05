@@ -39,7 +39,7 @@ public final class ClickGuiFirePass {
 
     public static final int MAX_PANELS = 32;
     /** One fixed halo width in design units; no per-panel size tweaking. */
-    private static final float HALO_MARGIN = 20.0f;
+    private static final float HALO_MARGIN = 10.0f;
     public static final int UNIFORM_SIZE = (4 + 4 + MAX_PANELS * 4 + MAX_PANELS * 4) * 4;
 
     private static final RenderPipeline PIPELINE = RenderPipelines.register(

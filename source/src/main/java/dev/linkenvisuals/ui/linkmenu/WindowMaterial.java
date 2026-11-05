@@ -31,7 +31,7 @@ public final class WindowMaterial {
 
         // 1. Neon ambient glow around perimeter
         GlowPipeline.radial(context, x + w * 0.5f, y + h * 0.5f, Math.max(w, h) * 0.55f,
-            LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, Math.round(28.0f * open)));
+            LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, Math.round(12.0f * open)));
 
         // 2. Base vertical gradient (17,26,21 -> 5,8,7 with alpha ~235)
         RoundedRectPipeline.drawVerticalGradient(context, x, y, w, h, RADIUS,
@@ -41,7 +41,7 @@ public final class WindowMaterial {
         // 3. Top accent sheen (soft mint glow at upper edge)
         float sheenH = Math.min(200.0f, h * 0.45f);
         RoundedRectPipeline.drawVerticalGradient(context, x, y, w, sheenH, RADIUS,
-            LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, Math.round(18.0f * open)),
+            LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, Math.round(9.0f * open)),
             LinkenMenuChrome.rgba(LinkenMenuChrome.ACCENT, 0));
 
         // 4. Subtle inner highlight line along top edge

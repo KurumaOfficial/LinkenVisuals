@@ -218,6 +218,8 @@ public class LinkGuiScreen extends Screen implements Wrapper {
     private static final float[][] TILE_GLOW_LAYERS = {
             {10f, 0.072f}, {6.5f, 0.116f}, {4f, 0.159f}, {2f, 0.188f}
     };
+    /** 1.0.147 lit every panel like a neon sign; keep the identity halo but halve it. */
+    private static final float GLOW_SCALE = 0.55f;
     // текущий кадр
     private float fade = 1f;
     private Color accent = new Color(0x7e, 0xdf, 0xb4);
@@ -465,19 +467,20 @@ public class LinkGuiScreen extends Screen implements Wrapper {
 
     // ── фон ──
         private void drawVignette(DrawContext context, Matrix3x2fStack ms, int sw, int sh) {
-        Color tint = lightTheme ? bgDark(0.88f, 140) : bgDark(0.55f, 140);
-        boolean blurred = false;
         if (ColorUtils.isBlurEnabled()) {
             try {
-                context.applyBlur();
-                blurred = true;
+                // Use the same 1/8 downsample + 9-tap glass capture as the
+                // donor main menu instead of vanilla applyBlur(). Vanilla's
+                // blur is visibly blocky at 1440p/4K and was the "bad
+                // background" in the report; the capture keeps the scene
+                // smooth while the radial vignette supplies the depth.
+                ru.method.linkenvisuals.screen.mainmenu.MenuChrome.drawScreenBackground(ms, sw, sh, 0f, 0f);
+                return;
             } catch (RuntimeException ignored) {
                 // fall through to the theme tint below
             }
         }
-        if (!blurred) {
-            tint = lightTheme ? bgDark(0.88f, 153) : bgDark(0.55f, 153);
-        }
+        Color tint = lightTheme ? bgDark(0.88f, 153) : bgDark(0.55f, 153);
         WindowGuiRender.drawRoundedRect(ms, 0, 0, sw, sh, 0f, tint);
     }
 
@@ -1527,7 +1530,7 @@ public class LinkGuiScreen extends Screen implements Wrapper {
         if (tt <= 0.02f) return;
         for (float[] l : TILE_GLOW_LAYERS) {
             float out = l[0];
-            int al = Math.round(l[1] * tt * 255f);
+            int al = Math.round(l[1] * tt * 255f * GLOW_SCALE);
             if (al <= 1) continue;
             // Soft feather layers, same SDF halo as the HUD/settings glow.
             Render2D.drawSoftGlow(ms, x, y, w, h, r, out, acc(al));
@@ -3099,7 +3102,7 @@ public class LinkGuiScreen extends Screen implements Wrapper {
     // появляется/гаснет только вместе с состоянием элемента (t) тем же transition, что и ховеры. ──
     /** Мягкий ореол по контуру прямоугольника. Рисуется ПОД элементом. t = прогресс активного состояния [0..1]. */
     private void glow(Matrix3x2fStack ms, float x, float y, float w, float h, float radius, float spread, int baseAlpha, float t) {
-        int al = Math.round(baseAlpha * MathHelper.clamp(t, 0f, 1f));
+        int al = Math.round(baseAlpha * GLOW_SCALE * MathHelper.clamp(t, 0f, 1f));
         if (al <= 1) return;
         // Soft SDF halo, same as the settings menu/HUD. The border shader draws
         // visible thin lines at panel edges in 1.21.11 instead of a glow.
@@ -3108,7 +3111,7 @@ public class LinkGuiScreen extends Screen implements Wrapper {
 
     /** Ореол вокруг кноба слайдера (белая точка) — accent+альфа. */
     private void glowCircle(Matrix3x2fStack ms, float cx, float cy, float r, float spread, int baseAlpha) {
-        int al = Math.max(0, Math.min(255, baseAlpha));
+        int al = Math.max(0, Math.min(255, Math.round(baseAlpha * GLOW_SCALE)));
         if (al <= 1) return;
         Render2D.drawSoftGlow(ms, cx - r, cy - r, r * 2f, r * 2f, r, spread, acc(al));
     }

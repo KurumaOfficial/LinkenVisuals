@@ -5,7 +5,14 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [],
   "client": [
-    "FogRendererAccessor"
+    "CreateWorldScreenAccessor",
+    "FogRendererAccessor",
+    "GameOptionsScreenAccessor",
+    "HandledScreenAccessor",
+    "MinecraftClientAccessor",
+    "OptionsScreenAccessor",
+    "SelectWorldScreenAccessor",
+    "TextFieldWidgetAccessor"
   ],
   "injectors": {
     "defaultRequire": 0

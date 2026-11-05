@@ -58,7 +58,7 @@ public class LinkGuiChrome {
         float auroraH = Math.min(height * 0.45f, 200f);
         Color aur = WindowGuiColors.lerp(accent(), Color.WHITE, 0.22f);
         WindowGuiRender.drawRoundedVerLinearGradientRect(stack, x, y, width, auroraH, radius,
-                WindowGuiColors.withAlpha(aur, 0.14f), WindowGuiColors.withAlpha(aur, 0f));
+                WindowGuiColors.withAlpha(aur, 0.08f), WindowGuiColors.withAlpha(aur, 0f));
         // Затенение к нижней кромке — контент «стоит» на земле, появляется глубина.
         float shadeH = Math.min(height * 0.28f, 110f);
         WindowGuiRender.drawRoundedVerLinearGradientRect(stack, x, y + height - shadeH, width, shadeH, radius,
@@ -69,11 +69,11 @@ public class LinkGuiChrome {
         // Fade применяет сам шейдер обводки — гаснет синхронно с фоном.
         WindowGuiRender.drawRoundedOutlineVerLinearGradientRect(
                 stack, x, y, width, height, radius, OUTLINE,
-                WindowGuiColors.withAlpha(border, 0.9f), WindowGuiColors.withAlpha(border, 0.25f));
+                WindowGuiColors.withAlpha(border, 0.55f), WindowGuiColors.withAlpha(border, 0.15f));
         drawPanelGlowRing(stack, x, y, width, height, radius);
         // Блик по верхней кромке: тонкая линия + мягкое сияние вниз — «стекло» ловит свет сверху.
         WindowGuiRender.drawRoundedRect(stack, x + radius, y + 1f, width - radius * 2f, 1f, 0.5f,
-                new Color(255, 255, 255, 16));
+                new Color(255, 255, 255, 10));
         WindowGuiRender.drawRoundedVerLinearGradientRect(stack, x + radius, y + 2f, width - radius * 2f, 14f, 0f,
                 new Color(255, 255, 255, 9), new Color(255, 255, 255, 0));
     }
@@ -113,7 +113,7 @@ public class LinkGuiChrome {
         );
         // Ровная обводка по всему периметру (без диагонального градиента, который давал яркий «белый угол»).
         WindowGuiRender.drawRoundedOutlineRect(
-                stack, x, y, width, height, radius, OUTLINE, WindowGuiColors.withAlpha(outline, 0.5f));
+                stack, x, y, width, height, radius, OUTLINE, WindowGuiColors.withAlpha(outline, 0.32f));
     }
 
     /**
@@ -356,8 +356,10 @@ public class LinkGuiChrome {
         float fade = ru.method.linkenvisuals.utils.render.LinkGuiRenderContext.getFadeMultiplier();
         if (fade <= 0.05f) return;
         Color accent = accent();
-        float spread = 22f;
-        float peak = 0.18f * fade;
+        // The customer reported an over-bright neon halo around every panel.
+        // Keep a soft identity glow, but roughly halve its reach and intensity.
+        float spread = 14f;
+        float peak = 0.10f * fade;
         Color c = WindowGuiColors.lerp(Color.WHITE, accent, 0.78f);
         Render2D.drawSoftGlow(stack, x, y, width, height, radius, spread,
                 new Color(c.getRed(), c.getGreen(), c.getBlue(),
@@ -375,7 +377,7 @@ public class LinkGuiChrome {
         float fade = ru.method.linkenvisuals.utils.render.LinkGuiRenderContext.getFadeMultiplier();
         if (fade <= 0.01f) return;
         WindowGuiRender.drawRoundedOutlineRect(stack, x, y, width, height, radius, OUTLINE,
-                WindowGuiColors.withAlpha(accent(), 0.22f));
+                WindowGuiColors.withAlpha(accent(), 0.10f));
     }
 
     private Color accent() {

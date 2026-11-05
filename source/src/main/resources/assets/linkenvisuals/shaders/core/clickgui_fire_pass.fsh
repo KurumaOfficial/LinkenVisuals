@@ -101,7 +101,7 @@ void main() {
         // on BOTH sides: outward this covers the border/shadow tip, inward it
         // covers the panel's border line. The rim therefore starts at the very
         // edge of the background instead of a little inside or outside it.
-        float rim = max(0.9, spread * 0.075);
+        float rim = max(0.6, spread * 0.060);
         float coreOuter = 1.0 - smoothstep(rim * 1.25, rim * 3.60, dist);
         float coreInner = 1.0 - smoothstep(rim * 0.20, rim * 3.20, -dist);
         core = max(core, min(coreOuter, coreInner) * visibility);
@@ -130,8 +130,8 @@ void main() {
 
     // The edge is a uniform accent rim (no heat flicker), while the animated
     // colour breathing lives in the softer outer halo.
-    float bodyAlpha = body * 0.18 * even * breath;
-    float edgeAlpha = edge * 0.85;
+    float bodyAlpha = body * 0.05 * even * breath;
+    float edgeAlpha = edge * 0.22;
     float alpha = (bodyAlpha + edgeAlpha) * accent.a;
     if (alpha <= 0.001) {
         discard;

@@ -1,6 +1,8 @@
 package dev.linkenvisuals.ui.linkmenu;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
 import dev.linkenvisuals.render.GlowPipeline;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
@@ -30,6 +32,18 @@ public final class MainMenuWelcomeAnim {
     private static final int CANVAS_W = 432;
     private static final int CANVAS_H = 128;
     private static final float STROKE_WIDTH = 9.0f;
+    /**
+     * The scene is drawn in GUI units, so at GUI scale 3 a 432 px texture is
+     * stretched to ~1000-1600 physical pixels. Rasterise at 3x and let the GPU
+     * filter it down; otherwise the handwriting looks jagged/soft exactly as
+     * in the customer report.
+     */
+    private static final int TEX_SCALE = 3;
+    private static final int TEX_W = CANVAS_W * TEX_SCALE;
+    private static final int TEX_H = CANVAS_H * TEX_SCALE;
+    // welcome.json layer transform: position (210.962, 63.445) - anchor (217.377, 69.099).
+    private static final float LAYER_OFFSET_X = 210.962f - 217.377f;
+    private static final float LAYER_OFFSET_Y = 63.445f - 69.099f;
 
     // 32 cubic Bezier points: { vx, vy, ox, oy, ix, iy }
     private static final float[][] NODES = {
@@ -79,19 +93,19 @@ public final class MainMenuWelcomeAnim {
         POLYLINE.clear();
         CUMULATIVE_LENGTHS.clear();
         float total = 0.0f;
-        float prevX = NODES[0][0];
-        float prevY = NODES[0][1];
+        float prevX = NODES[0][0] + LAYER_OFFSET_X;
+        float prevY = NODES[0][1] + LAYER_OFFSET_Y;
         POLYLINE.add(new float[]{ prevX, prevY });
         CUMULATIVE_LENGTHS.add(0.0f);
 
         int samplesPerSegment = 24;
         for (int i = 0; i < NODES.length - 1; i++) {
-            float p0x = NODES[i][0];
-            float p0y = NODES[i][1];
+            float p0x = NODES[i][0] + LAYER_OFFSET_X;
+            float p0y = NODES[i][1] + LAYER_OFFSET_Y;
             float p1x = p0x + NODES[i][2]; // + ox
             float p1y = p0y + NODES[i][3]; // + oy
-            float p3x = NODES[i + 1][0];
-            float p3y = NODES[i + 1][1];
+            float p3x = NODES[i + 1][0] + LAYER_OFFSET_X;
+            float p3y = NODES[i + 1][1] + LAYER_OFFSET_Y;
             float p2x = p3x + NODES[i + 1][4]; // + ix
             float p2y = p3y + NODES[i + 1][5]; // + iy
 
@@ -140,15 +154,15 @@ public final class MainMenuWelcomeAnim {
         context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE_ID,
             Math.round(x), Math.round(y), 0.0f, 0.0f,
             Math.round(drawW), Math.round(drawH),
-            CANVAS_W, CANVAS_H, CANVAS_W, CANVAS_H, tint);
+            TEX_W, TEX_H, TEX_W, TEX_H, tint);
     }
 
     private static void ensureTexture(float progress) {
         if (texture == null) {
-            NativeImage image = new NativeImage(CANVAS_W, CANVAS_H, false);
-            texture = new NativeImageBackedTexture(() -> "welcome_cursive", image);
+            NativeImage image = new NativeImage(TEX_W, TEX_H, false);
+            texture = new LinearTexture(image);
             MinecraftClient.getInstance().getTextureManager().registerTexture(TEXTURE_ID, texture);
-            cpuBuffer = new BufferedImage(CANVAS_W, CANVAS_H, BufferedImage.TYPE_INT_ARGB);
+            cpuBuffer = new BufferedImage(TEX_W, TEX_H, BufferedImage.TYPE_INT_ARGB);
             lastRenderedProgress = -1.0f;
         }
 
@@ -162,7 +176,10 @@ public final class MainMenuWelcomeAnim {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         g2.setBackground(new Color(0, 0, 0, 0));
-        g2.clearRect(0, 0, CANVAS_W, CANVAS_H);
+        g2.clearRect(0, 0, TEX_W, TEX_H);
+        // Draw the design-space path into the supersampled buffer. Scaling the
+        // Graphics2D (instead of the points) also scales the stroke cleanly.
+        g2.scale(TEX_SCALE, TEX_SCALE);
 
         float targetLength = progress * TOTAL_PATH_LENGTH;
         Path2D.Float path = new Path2D.Float();
@@ -195,9 +212,9 @@ public final class MainMenuWelcomeAnim {
         NativeImage nativeImage = texture.getImage();
         if (nativeImage != null) {
             int[] raw = ((DataBufferInt) cpuBuffer.getRaster().getDataBuffer()).getData();
-            for (int cy = 0; cy < CANVAS_H; cy++) {
-                int rowOffset = cy * CANVAS_W;
-                for (int cx = 0; cx < CANVAS_W; cx++) {
+            for (int cy = 0; cy < TEX_H; cy++) {
+                int rowOffset = cy * TEX_W;
+                for (int cx = 0; cx < TEX_W; cx++) {
                     int argb = raw[rowOffset + cx];
                     int a = (argb >>> 24) & 0xFF;
                     int r = (argb >>> 16) & 0xFF;
@@ -219,5 +236,19 @@ public final class MainMenuWelcomeAnim {
         }
         cpuBuffer = null;
         lastRenderedProgress = -1.0f;
+    }
+
+    /**
+     * The default AbstractTexture sampler minifies with NEAREST, which turns a
+     * downscaled handwriting texture into stair-stepped edges. Use LINEAR for
+     * both minification and magnification.
+     */
+    private static final class LinearTexture extends NativeImageBackedTexture {
+        LinearTexture(NativeImage image) {
+            super(() -> "welcome_cursive", image);
+            this.sampler = RenderSystem.getSamplerCache().get(
+                AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE,
+                FilterMode.LINEAR, FilterMode.LINEAR, false);
+        }
     }
 }
