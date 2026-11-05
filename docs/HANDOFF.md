@@ -4,6 +4,24 @@
 >
 > **SCOPE DECISION 2026-10-24:** полный **Punchy** (181 класс / 62 261 строка), включая Punchy-зависимый `ViewModel Animated`, **не портируем**. Это не открытый остаток, а явно исключённый объём по решению пользователя. `HandMotion` (walk/sprint/water/fall/attack) — финальный принятый subset.
 
+## Состояние на 2026-11-05 (D120 — quality-pass 1.0.147 → 1.0.148)
+
+Заказчик прислал скриншоты 1.0.147: «меню сильно светится», «беграунд не качественный», «текст welcome не качественный». Все три пункта воспроизведены на 2560×1440 и исправлены; отдельно проведён аудит merge-сборки.
+
+### Сделано
+1. **Cursive Welcome.** `MainMenuWelcomeAnim` и donor `CursiveWelcome` теперь растеризуют путь в **3×** (1296×384 / 1284×369) и используют `LinearTexture` с `FilterMode.LINEAR` для min/mag. Дефолтный `AbstractTexture` в 1.21.11 ставит **NEAREST** на minification — именно он давал рваные края при downscale. В port-анимацию также добавлен donor layer offset `(210.962,63.445)−(217.377,69.099)`.
+2. **Пересвет LinkGUI.** `ClickGuiFirePass`: halo 20→10, `edgeAlpha` 0.85→0.22, `bodyAlpha` 0.18→0.05. В donor/port `LinkGuiScreen` добавлен `GLOW_SCALE=0.55`. `LinkGuiChrome`: panel glow 22/0.18→14/0.10, ring 0.22→0.10, glass border 0.9/0.25→0.55/0.15, card outline 0.5→0.32. `WindowMaterial`: radial 28→12, sheen 18→9.
+3. **Фон меню.** Donor `LinkGuiScreen.drawVignette` и port `drawBackdrop` больше не зовут vanilla `context.applyBlur()`. Используется `HudGlassCapture.refresh()` (1/2→1/4→1/8, LINEAR) + 9-tap `GlassRenderer`/`MenuChrome.drawScreenBackground`; сверху мягкий вертикальный veil. `MenuChrome.drawScreenBackground` теперь сам обновляет capture — экраны, открытые поверх мира (в т.ч. connect), не сэмплируют пустую/устаревшую текстуру (причина чёрного фона).
+4. **Accessor-миксины.** В `dev.linkenvisuals.mixins.json` возвращены безопасные accessor'ы (`CreateWorldScreenAccessor`, `TextFieldWidgetAccessor`, `MinecraftClientAccessor`, `OptionsScreenAccessor`, `GameOptionsScreenAccessor`, `SelectWorldScreenAccessor`, `HandledScreenAccessor`, `FogRendererAccessor`). Без них Create World / Alt Manager падали с `IllegalClassLoadError`/ClassCastException. Behavior-миксины порта сознательно не включались: donor-first merge рендерит donor HUD/экраны, включение всех порт-миксинов даёт двойной HUD и конфликт routing.
+
+### Проверки
+- `test`: **83 suites / 325 tests**, 0 fail/error/skip.
+- Визуальные кадры 2560×1440: `run/screenshots/visual-menu-welcome.png` (полное cursive «Welcome»), `visual-menu-late.png` (main menu), `visual-clickgui.png` (Rose, pinned World/StreamerMode/Particles), `visual-clickgui-late.png`.
+- Autotest 1.0.147 до правок: 1085 шагов, 1069 ok / 16 fail. После accessor-фикса: **1071 ok / 14 fail / 0 skip** (1085 шагов); Create World-краши ушли.
+
+### Остаток (не визуальные баги merge)
+Autotest после accessor-фикса всё ещё показывает провалы **port-only** проверок: HUD preview (Target/Coordinates/Cooldowns/Armor/Inventory/LowArmor/CustomVitals/KillStreak/HelperItems), SelfNametags, KillStreak tracking, alternative pause route, ItemRadius labels. Причина — в 1.0.147 активен donor HUD и отключены behavior-миксины порта (`InGameHudMixin`, `MinecraftClientMixin`, `PlayerEntityMixin` и т.д.). Это отдельный скоуп: включать их «вслепую» нельзя, будет двойной HUD/конфликт экранов.
+
 ## Состояние на 2026-10-24 (D119 — встроенные optimization-моды, Fabric Jar-in-Jar) — v1.0.140
 
 ### Сделано

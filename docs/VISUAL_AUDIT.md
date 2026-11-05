@@ -314,3 +314,40 @@ is hard-wired to `DEFAULT` and its UI control is hidden.
   Capture both at identical fullscreen/GUI scale, build side-by-side/diff
   sheets, and classify every remaining hotspot as port bug / donor-only /
   MC-version / capture noise.
+
+## 8. D120 — customer quality pass on 1.0.147 (2026-11-05, v1.0.148)
+
+Customer report: the menu is over-lit, the menu backdrop is low quality, and
+the cursive welcome text is jagged. Reproduced on the merged 1.0.147 source
+and verified with dev captures at 2560×1440.
+
+**Fixes:**
+- `MainMenuWelcomeAnim` + donor `CursiveWelcome`: 3× supersampled texture,
+  donor layer offset in the port path, and explicit LINEAR min/mag sampler
+  (`LinearTexture`). The default `AbstractTexture` uses NEAREST minification,
+  which caused the stair-stepped edges when the 432 px texture was drawn at
+  ~1000–1600 physical pixels.
+- `ClickGuiFirePass`: halo margin 20→10, edge alpha 0.85→0.22, body alpha
+  0.18→0.05. `GLOW_SCALE=0.55` in donor and port LinkGUI; `LinkGuiChrome`
+  panel halo/ring/border and `WindowMaterial` radial glow reduced.
+- Backdrop: vanilla `context.applyBlur()` replaced by a refreshed
+  `HudGlassCapture` (1/2→1/4→1/8, LINEAR) sampled through the 9-tap glass
+  shader / `MenuChrome.drawScreenBackground`, plus a restrained vertical veil.
+  `MenuChrome` refreshes the capture itself because `HudManager` returns early
+  while a screen is open; this also fixes the near-black connect backdrop.
+- Restored safe accessor mixins in `dev.linkenvisuals.mixins.json`
+  (`CreateWorldScreenAccessor`, `TextFieldWidgetAccessor`,
+  `MinecraftClientAccessor`, `OptionsScreenAccessor`,
+  `GameOptionsScreenAccessor`, `SelectWorldScreenAccessor`,
+  `HandledScreenAccessor`, `FogRendererAccessor`).
+
+**Evidence:** `visual-menu-welcome.png`, `visual-menu-late.png`,
+`visual-clickgui.png`, `visual-clickgui-late.png` in `run/screenshots/`
+(dev-only, not committed). `test`: 83 suites / 325 tests, 0/0/0.
+
+**Remaining merge failures:** the 1.0.147 autotest still reports port-only
+checks (HUD previews, SelfNametags, KillStreak, pause routing, ItemRadius
+labels) because the merge enables donor behavior mixins and leaves the port
+behavior mixin list disabled. Re-enabling all of them would double-render the
+HUD and conflict with donor screen routing; this needs its own scoped merge
+task.
