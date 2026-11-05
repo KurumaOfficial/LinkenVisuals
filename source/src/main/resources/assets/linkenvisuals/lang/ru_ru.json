@@ -93,6 +93,7 @@
   "settings.ui.text_color": "Текст",
   "settings.ui.fade": "Fade",
   "settings.ui.blur": "Размытие",
+  "settings.ui.glow": "Свечение GUI",
   "settings.ui.render_profiler": "Профайлер рендера",
   "settings.ui.full_profiler": "Полный профайлер",
   "settings.ui.transparency": "Прозрачность GUI",

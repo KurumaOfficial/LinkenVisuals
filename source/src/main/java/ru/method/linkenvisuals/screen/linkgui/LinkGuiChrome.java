@@ -1,5 +1,6 @@
 package ru.method.linkenvisuals.screen.linkgui;
 
+import dev.linkenvisuals.render.UiGlow;
 import lombok.experimental.UtilityClass;
 import org.joml.Matrix3x2fStack;
 import net.minecraft.util.Identifier;
@@ -353,6 +354,7 @@ public class LinkGuiChrome {
      * Смена темы меняет цвет мгновенно (accent() читается каждый кадр).
      */
         private void drawPanelGlow(Matrix3x2fStack stack, float x, float y, float width, float height, float radius) {
+        if (!UiGlow.enabled()) return;
         float fade = ru.method.linkenvisuals.utils.render.LinkGuiRenderContext.getFadeMultiplier();
         if (fade <= 0.05f) return;
         Color accent = accent();
@@ -374,6 +376,7 @@ public class LinkGuiChrome {
     }
 
     private void drawPanelGlowRing(Matrix3x2fStack stack, float x, float y, float width, float height, float radius) {
+        if (!UiGlow.enabled()) return;
         float fade = ru.method.linkenvisuals.utils.render.LinkGuiRenderContext.getFadeMultiplier();
         if (fade <= 0.01f) return;
         WindowGuiRender.drawRoundedOutlineRect(stack, x, y, width, height, radius, OUTLINE,

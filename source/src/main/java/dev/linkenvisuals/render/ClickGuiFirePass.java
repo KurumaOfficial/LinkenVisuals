@@ -114,12 +114,12 @@ public final class ClickGuiFirePass {
     public static void prepare(float fade, int accent) {
         preparedFade = Math.max(0.0f, Math.min(1.0f, fade));
         preparedAccent = accent;
-        pending = !PANELS.isEmpty() && preparedFade > 0.01f;
+        pending = UiGlow.enabled() && !PANELS.isEmpty() && preparedFade > 0.01f;
     }
 
     /** Drawn by GuiRendererMixin after the GUI batch has been submitted. */
     public static void render() {
-        if (!pending || PANELS.isEmpty() || preparedFade <= 0.01f) {
+        if (!pending || PANELS.isEmpty() || preparedFade <= 0.01f || !UiGlow.enabled()) {
             return;
         }
         pending = false;

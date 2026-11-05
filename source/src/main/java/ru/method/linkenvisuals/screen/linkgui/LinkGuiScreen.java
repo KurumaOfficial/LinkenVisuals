@@ -17,6 +17,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 import dev.linkenvisuals.render.ClickGuiFirePass;
+import dev.linkenvisuals.render.UiGlow;
 import ru.method.linkenvisuals.LinkenVisuals;
 import ru.method.linkenvisuals.modules.api.Category;
 import ru.method.linkenvisuals.modules.api.Module;
@@ -1526,6 +1527,7 @@ public class LinkGuiScreen extends Screen implements Wrapper {
      * Отдельно от общего {@link #glow} (тот — тонкое одиночное кольцо для дока/тумблера/уголков).
      */
     private void tileGlow(Matrix3x2fStack ms, float x, float y, float w, float h, float r, float t) {
+        if (!UiGlow.enabled()) return;
         float tt = MathHelper.clamp(t, 0f, 1f);
         if (tt <= 0.02f) return;
         for (float[] l : TILE_GLOW_LAYERS) {
@@ -1711,6 +1713,19 @@ public class LinkGuiScreen extends Screen implements Wrapper {
 
         UI ui = LinkenVisuals.getInstance().getModuleManager().getModule(UI.class);
         if (ui == null) return;
+
+        // Master halo switch in the INTERFACE header: "GUI Glow" on/off.
+        BooleanSetting glowSetting = bool(ui, "settings.ui.glow");
+        if (glowSetting != null) {
+            String glowLabel = I18n.translate("settings.ui.glow");
+            Instance gf = Fonts.UNBOUNDED_L.getFont(9f);
+            float gx = px + cw - 13f - 36f;
+            float gw = gf.getWidth(glowLabel);
+            Render2D.drawFont(ms, gf, glowLabel, gx - 8f - gw, cy - 18f, a(TEXT3));
+            drawToggle(ms, gx, cy - 20f, "uiGlowTgl", glowSetting.getValue());
+            region(gx, cy - 20f, 36f, 20f, 0,
+                () -> glowSetting.setValue(!glowSetting.getValue()));
+        }
 
         // группа 1: масштаб + Применить/Сброс
         float g1H = 13f + 30f + 13f + 34f + 13f;
@@ -3102,6 +3117,7 @@ public class LinkGuiScreen extends Screen implements Wrapper {
     // появляется/гаснет только вместе с состоянием элемента (t) тем же transition, что и ховеры. ──
     /** Мягкий ореол по контуру прямоугольника. Рисуется ПОД элементом. t = прогресс активного состояния [0..1]. */
     private void glow(Matrix3x2fStack ms, float x, float y, float w, float h, float radius, float spread, int baseAlpha, float t) {
+        if (!UiGlow.enabled()) return;
         int al = Math.round(baseAlpha * GLOW_SCALE * MathHelper.clamp(t, 0f, 1f));
         if (al <= 1) return;
         // Soft SDF halo, same as the settings menu/HUD. The border shader draws
@@ -3111,6 +3127,7 @@ public class LinkGuiScreen extends Screen implements Wrapper {
 
     /** Ореол вокруг кноба слайдера (белая точка) — accent+альфа. */
     private void glowCircle(Matrix3x2fStack ms, float cx, float cy, float r, float spread, int baseAlpha) {
+        if (!UiGlow.enabled()) return;
         int al = Math.max(0, Math.min(255, Math.round(baseAlpha * GLOW_SCALE)));
         if (al <= 1) return;
         Render2D.drawSoftGlow(ms, cx - r, cy - r, r * 2f, r * 2f, r, spread, acc(al));

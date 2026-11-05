@@ -28,6 +28,7 @@ import dev.linkenvisuals.render.GlowPipeline;
 import dev.linkenvisuals.render.GlyphAtlas;
 import dev.linkenvisuals.render.IconPipeline;
 import dev.linkenvisuals.render.MsdfText;
+import dev.linkenvisuals.render.UiGlow;
 import dev.linkenvisuals.render.PanelPipeline;
 import dev.linkenvisuals.render.RoundedRectPipeline;
 import dev.linkenvisuals.ui.AnimatedString;
@@ -1920,6 +1921,9 @@ public final class LinkGuiScreen extends Screen {
      */
     private void glow(DrawContext context, float x, float y, float w, float h,
                       float radius, float spread, int baseAlpha, float t) {
+        if (!UiGlow.enabled()) {
+            return;
+        }
         int al = Math.round(baseAlpha * GLOW_SCALE * MathHelper.clamp(t, 0f, 1f));
         if (al <= 1) {
             return;
@@ -1945,6 +1949,9 @@ public final class LinkGuiScreen extends Screen {
      * with the soft HUD glow shader.
      */
     private void tileGlow(DrawContext context, float x, float y, float w, float h, float radius, float t) {
+        if (!UiGlow.enabled()) {
+            return;
+        }
         float tt = MathHelper.clamp(t, 0f, 1f);
         if (tt <= 0.02f) {
             return;

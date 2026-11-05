@@ -1189,6 +1189,7 @@
   "settings.ui.apply": "Применить",
   "settings.ui.background_color": "Фон",
   "settings.ui.blur": "Размытие",
+  "settings.ui.glow": "Свічення GUI",
   "settings.ui.default": "По умолчанию",
   "settings.ui.fade": "Fade",
   "settings.ui.full_profiler": "Полный профайлер",

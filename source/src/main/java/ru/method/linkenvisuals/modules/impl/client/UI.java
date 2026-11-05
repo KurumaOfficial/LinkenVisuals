@@ -19,6 +19,7 @@ import ru.method.linkenvisuals.screen.linkgui.theme.LinkGuiThemeManager;
 import ru.method.linkenvisuals.screen.linkgui.theme.LinkGuiThemePreset;
 import ru.method.linkenvisuals.utils.render.ColorUtils;
 import ru.method.linkenvisuals.utils.render.RenderFrameTracker;
+import dev.linkenvisuals.render.UiGlow;
 import net.minecraft.util.math.MathHelper;
 
 import java.awt.Color;
@@ -97,6 +98,15 @@ public class UI extends Module {
         }
     };
 
+    /** Master switch for the LinkGUI accent halos/rims (theme borders stay). */
+    private final BooleanSetting glow = new BooleanSetting("settings.ui.glow", true) {
+        @Override
+        public void setValue(Boolean value) {
+            super.setValue(value);
+            UiGlow.setEnabled(getValue());
+        }
+    };
+
     // «Boost FPS UI»: режим фона при открытом Link GUI (Default/Middle/High). В общем списке скрыт
     // (visible=false) — управляется выбором в секции «Интерфейс» окна Темы.
     private static BoostFpsMode boostFpsMode = BoostFpsMode.DEFAULT;
@@ -161,6 +171,7 @@ public class UI extends Module {
         getSettings().add(textColor);
         getSettings().add(fade);
         getSettings().add(blur);
+        getSettings().add(glow);
         getSettings().add(boostFpsUi);
         getSettings().add(customScoreboard);
         getSettings().add(scoreboardRadius);
@@ -176,6 +187,7 @@ public class UI extends Module {
         ColorUtils.setTextColor(textColor.getValue());
         ColorUtils.setThemeFadeEnabled(fade.getValue());
         ColorUtils.setBlurEnabled(blur.getValue());
+        UiGlow.setEnabled(glow.getValue());
         boostFpsMode = boostFpsUi.getValue();
         guiTransparency = MathHelper.clamp(transparency.getValue() / 100f, 0.3f, 1f);
         snapInterfaceScale(scale.getValue());

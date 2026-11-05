@@ -163,6 +163,7 @@
   "settings.ui.text_color": "Text",
   "settings.ui.fade": "Fade",
   "settings.ui.blur": "Blur",
+  "settings.ui.glow": "GUI Glow",
   "settings.ui.render_profiler": "Render Profiler",
   "settings.ui.full_profiler": "Full Profiler",
   "settings.ui.transparency": "GUI Transparency",
