@@ -38,7 +38,7 @@ public final class MenuChrome {
 
     /** Версия игры и сборка клиента — единый источник для дисклеймера меню и лейбла «Сетевой игры». */
     public static final String MC_VERSION = "1.21.11";
-    public static final String BUILD = "1.0.147";
+    public static final String BUILD = "1.0.150";
 
     // --- Палитра (дизайн-токены). ---
     public static final Color TEXT   = new Color(0xee, 0xf2, 0xef);

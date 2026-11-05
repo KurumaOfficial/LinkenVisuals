@@ -1841,7 +1841,7 @@ public class LinkGuiScreen extends Screen implements Wrapper {
         float flw = widthSpaced(ff, "linken", -0.03f * 11.5f);
         Render2D.drawFont(ms, ff, ".", px + flw, fy, acc(255));
         Instance vf = Fonts.PLEXMONO.getFont(9.5f);
-        String ver = "1.21.11 · 1.0.147";
+        String ver = "1.21.11 · 1.0.150";
         float verW = vf.getWidth(ver);
         Render2D.drawFont(ms, vf, ver, px + cw - verW, fy, a(MUTED4));
         float fhx = px + flw + ff.getWidth(".") + 10f;

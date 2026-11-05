@@ -83,6 +83,13 @@ public final class LinkenConnectRenderer {
                               boolean showCancel) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc == null || mc.getWindow() == null) return;
+        // The donor renderer draws through Render2D's matrix-stack overloads.
+        // In 1.21.11 those resolve DrawContext through Render2D.activeContext,
+        // which is only set by prepareHudFrame(). Without this call every
+        // logo/window/progress draw is a silent no-op and the connect screen
+        // stays black (the reported loading-screen bug).
+        Render2D.prepareHudFrame(context);
+        ru.method.linkenvisuals.utils.render.LinkGuiRenderContext.resetFade();
         // HiDPI-safe: от GUI-scaled размеров (getHeight() — логический размер окна, scaleFactor — от
         // фреймбуфера; на Retina давало uiScale вдвое меньше). См. CustomMainMenuScreen.
         uiScale = Math.max(0.05f, mc.getWindow().getScaledHeight() / MenuChrome.DESIGN_HEIGHT);
