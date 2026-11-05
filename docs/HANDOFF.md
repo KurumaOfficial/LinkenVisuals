@@ -4,6 +4,20 @@
 >
 > **SCOPE DECISION 2026-10-24:** полный **Punchy** (181 класс / 62 261 строка), включая Punchy-зависимый `ViewModel Animated`, **не портируем**. Это не открытый остаток, а явно исключённый объём по решению пользователя. `HandMotion` (walk/sprint/water/fall/attack) — финальный принятый subset.
 
+## Состояние на 2026-11-05 (D122 — фикс экрана подключения + фон 4K) — v1.0.150
+
+### Экран загрузки/подключения
+Корень чёрного экрана: donor `LinkenConnectRenderer` рисует через matrix-stack overload'ы `Render2D`, но не вызывал `Render2D.prepareHudFrame(context)`. В 1.21.11 `Render2D.activeContext` не заполняется сам, поэтому `drawFont`/`drawTexture`/`drawRoundedRect` молча возвращались: оставался только фон/тост «Подключение...». Исправление — `Render2D.prepareHudFrame(context)` + `LinkGuiRenderContext.resetFade()` в начале `LinkenConnectRenderer.render`. Проверено на dev-превью: фон башни, логотип, часы, центральная карточка со спиннером, сервер, прогресс, статус и «Отмена» рисуются.
+
+### Фон главного меню
+Заменил обе копии (`mainmenu/bg-tower.png`, `textures/linkmenu/bg-tower.png`) на присланный апскейл **5080×3996** (10 988 784 B, RGB, точный aspect 1270:999). Константы `1270×999` оставлены как design-размер cover (пропорции совпадают). Проверен кадр 2560×1440 (`run/screenshots/visual-menu-late.png`).
+
+### Проверки
+- `test`: 83 suites / 325 tests, 0 fail/error/skip.
+- Jar **1.0.150**: `54 556 473 B`, SHA-256 `F9FDFDA6EEC1BE028DED4F9679F60A776DF50E38D03D510F2E6F5A78520560F2`.
+- Запуск 1.21.11: `linkenvisuals 1.0.150`, `Initialized successfully. Active Style: Linken`, ошибок нет.
+- Connect preview: `run/screenshots/visual-connect-preview.png` — фон, логотип, часы, карточка, спиннер, сервер, статус, прогресс, «Отмена».
+
 ## Состояние на 2026-11-05 (D121 — переключатель свечения GUI) — v1.0.149
 
 - В donor `UI` добавлена настройка `settings.ui.glow` (default **true**), общий флаг `dev.linkenvisuals.render.UiGlow`.

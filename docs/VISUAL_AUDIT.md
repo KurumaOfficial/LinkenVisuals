@@ -361,8 +361,23 @@ helpers, `LinkGuiChrome` panel halo/ring and `WindowMaterial` radial/sheen.
 Panel borders and active fills stay visible. Verified ON/OFF visually; setting
 persists through `ConfigManager`.
 
-The main-menu background is still the donor **1270×999** asset
-(`mainmenu/bg-tower.png`, same bytes as `textures/linkmenu/bg-tower.png`). The
-original was exported for a customer-side upscale; target 4× (5080×3996) with
-the 1270:999 aspect and no crop. Once returned, replace both copies and verify
-cover at 1920×1080 and 2560×1440.
+### D122 — connect backdrop + 4K main-menu art (v1.0.150)
+
+The black connect/loading screen had a concrete cause: `LinkenConnectRenderer`
+called the matrix-stack overloads of `Render2D` without first calling
+`Render2D.prepareHudFrame(context)`. In 1.21.11 `Render2D.activeContext` is not
+filled implicitly, so every logo/window/progress draw was a silent no-op and
+only the background/toast remained. The renderer now prepares the context and
+resets the LinkGUI fade at entry; a dev preview shows the full tower backdrop,
+logo, clock, centered connect card, spinner, address, status, progress and
+cancel row.
+
+The main-menu art was replaced in both locations with the customer's 4×
+upscale: **5080×3996**, 10 988 784 B, exact 1270:999 aspect. The `1270×999`
+constants remain the design cover size. Verified at 2560×1440
+(`run/screenshots/visual-menu-late.png`).
+
+Connect preview evidence: `run/screenshots/visual-connect-preview.png`.
+`test`: 83 suites / 325 tests, 0/0/0. Jar 1.0.150: 54 556 473 B,
+SHA-256 `F9FDFDA6EEC1BE028DED4F9679F60A776DF50E38D03D510F2E6F5A78520560F2`;
+dev launch reached `Initialized successfully` with no errors.
